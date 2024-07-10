@@ -7,4 +7,10 @@
     <className>com/google/bigtable/v2/*Grpc</className>
     <field>METHOD_*</field>
   </difference>
+  <!-- TODO: remove after released -->
+  <difference>
+    <differenceType>7012</differenceType>
+    <className>com/google/bigtable/v2/BigtableGrpc$AsyncService</className>
+    <method>*executeQuery*</method>
+  </difference>
 </differences>
