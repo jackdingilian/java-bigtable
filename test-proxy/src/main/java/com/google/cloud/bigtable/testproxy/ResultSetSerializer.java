@@ -208,7 +208,9 @@ public class ResultSetSerializer {
       case TIMESTAMP:
         return Type.newBuilder().setTimestampType(Timestamp.getDefaultInstance()).build();
       case DATE:
-        return Type.newBuilder().setBytesType(Bytes.getDefaultInstance()).build();
+        return Type.newBuilder()
+            .setDateType(com.google.bigtable.v2.Type.Date.getDefaultInstance())
+            .build();
       case ARRAY:
         SqlType.Array<?> arrayType = (SqlType.Array<?>) type;
         return Type.newBuilder()
