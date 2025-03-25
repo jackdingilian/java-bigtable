@@ -39,8 +39,6 @@ import com.google.bigtable.v2.Value;
 import com.google.cloud.bigtable.data.v2.internal.NameUtil;
 import com.google.cloud.bigtable.data.v2.internal.PrepareResponse;
 import com.google.cloud.bigtable.data.v2.internal.PreparedStatementImpl;
-import com.google.cloud.bigtable.data.v2.internal.PreparedStatementImpl.PreparedQueryData;
-import com.google.cloud.bigtable.data.v2.internal.PreparedStatementImpl.PreparedQueryVersion;
 import com.google.cloud.bigtable.data.v2.internal.QueryParamUtil;
 import com.google.cloud.bigtable.data.v2.models.sql.BoundStatement;
 import com.google.cloud.bigtable.data.v2.models.sql.SqlType;
@@ -362,8 +360,8 @@ public class SqlProtoFactory {
     public static final ByteString DEFAULT_PREPARED_QUERY = ByteString.copyFromUtf8("foo");
     Queue<ExecuteRpcExpectation> executeExpectations = new LinkedBlockingDeque<>();
     Queue<PrepareRpcExpectation> prepareExpectations = new LinkedBlockingDeque<>();
-    int executeCount = 0;
-    public int prepareCount = 0;
+    volatile int executeCount = 0;
+    volatile public int prepareCount = 0;
 
     public void addExpectation(ExecuteRpcExpectation expectation) {
       executeExpectations.add(expectation);
