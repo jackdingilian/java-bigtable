@@ -503,7 +503,9 @@ public class ExecuteQueryRetryTest {
         .setRetrySettings(
             RetrySettings.newBuilder()
                 .setMaxAttempts(10)
-                .setTotalTimeoutDuration(Duration.ofMillis(30))
+                // Give enough of a timeout here so that slow test runs don't
+                // time out before the initial execute failure
+                .setTotalTimeoutDuration(Duration.ofMillis(300))
                 .build())
         .build();
     settings.stubSettings().build();
