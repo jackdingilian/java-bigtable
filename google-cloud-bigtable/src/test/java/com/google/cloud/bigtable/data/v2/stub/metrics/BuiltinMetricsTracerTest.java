@@ -21,8 +21,10 @@ import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConst
 import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConstants.CLIENT_NAME_KEY;
 import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConstants.CLUSTER_ID_KEY;
 import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConstants.CONNECTIVITY_ERROR_COUNT_NAME;
+import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConstants.FIRST_RESPONSE_LATENCIES_NAME;
 import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConstants.METHOD_KEY;
 import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConstants.OPERATION_LATENCIES_NAME;
+import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConstants.REMAINING_DEADLINE_NAME;
 import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConstants.RETRY_COUNT_NAME;
 import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConstants.SERVER_LATENCIES_NAME;
 import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConstants.STATUS_KEY;
@@ -33,9 +35,11 @@ import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsTestU
 import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsTestUtils.getMetricData;
 import static com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsTestUtils.verifyAttributes;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import com.google.api.client.util.Lists;
 import com.google.api.core.ApiFunction;
+import com.google.api.core.ApiFuture;
 import com.google.api.core.SettableApiFuture;
 import com.google.api.gax.batching.Batcher;
 import com.google.api.gax.batching.BatchingException;
@@ -66,19 +70,16 @@ import com.google.cloud.bigtable.data.v2.models.TableId;
 import com.google.cloud.bigtable.data.v2.stub.EnhancedBigtableStub;
 import com.google.cloud.bigtable.data.v2.stub.EnhancedBigtableStubSettings;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Comparators;
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.StringValue;
-import io.grpc.CallOptions;
-import io.grpc.Channel;
-import io.grpc.ClientCall;
-import io.grpc.ClientInterceptor;
-import io.grpc.ForwardingClientCall;
 import io.grpc.ForwardingServerCall;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
-import io.grpc.MethodDescriptor;
+import io.grpc.ProxiedSocketAddress;
+import io.grpc.ProxyDetector;
 import io.grpc.Server;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
@@ -93,9 +94,14 @@ import io.opentelemetry.sdk.metrics.InstrumentSelector;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.metrics.View;
+import io.opentelemetry.sdk.metrics.data.HistogramPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
+import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.charset.Charset;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -104,6 +110,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -113,7 +121,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
-import org.threeten.bp.Duration;
 
 @RunWith(JUnit4.class)
 public class BuiltinMetricsTracerTest {
@@ -123,6 +130,7 @@ public class BuiltinMetricsTracerTest {
   private static final String TABLE = "fake-table";
 
   private static final String BAD_TABLE_ID = "non-exist-table";
+  private static final String FIRST_RESPONSE_TABLE_ID = "first-response";
   private static final String ZONE = "us-west-1";
   private static final String CLUSTER = "cluster-0";
   private static final long FAKE_SERVER_TIMING = 50;
@@ -130,8 +138,7 @@ public class BuiltinMetricsTracerTest {
   private static final long APPLICATION_LATENCY = 200;
   private static final long SLEEP_VARIABILITY = 15;
   private static final String CLIENT_NAME = "java-bigtable/" + Version.VERSION;
-
-  private static final long CHANNEL_BLOCKING_LATENCY = 75;
+  private static final Duration CHANNEL_BLOCKING_LATENCY = Duration.ofMillis(200);
 
   @Rule public final MockitoRule mockitoRule = MockitoJUnit.rule();
 
@@ -145,6 +152,8 @@ public class BuiltinMetricsTracerTest {
   private Attributes baseAttributes;
 
   private InMemoryMetricReader metricReader;
+
+  private DelayProxyDetector delayProxyDetector;
 
   @Before
   public void setUp() throws Exception {
@@ -197,28 +206,6 @@ public class BuiltinMetricsTracerTest {
           }
         };
 
-    ClientInterceptor clientInterceptor =
-        new ClientInterceptor() {
-          @Override
-          public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-              MethodDescriptor<ReqT, RespT> methodDescriptor,
-              CallOptions callOptions,
-              Channel channel) {
-            return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
-                channel.newCall(methodDescriptor, callOptions)) {
-              @Override
-              public void sendMessage(ReqT message) {
-                try {
-                  Thread.sleep(CHANNEL_BLOCKING_LATENCY);
-                } catch (InterruptedException e) {
-                  throw new RuntimeException(e);
-                }
-                super.sendMessage(message);
-              }
-            };
-          }
-        };
-
     server = FakeServiceBuilder.create(fakeService).intercept(trailersInterceptor).start();
 
     BigtableDataSettings settings =
@@ -226,13 +213,25 @@ public class BuiltinMetricsTracerTest {
             .setProjectId(PROJECT_ID)
             .setInstanceId(INSTANCE_ID)
             .setAppProfileId(APP_PROFILE_ID)
+            .setRefreshingChannel(false)
             .build();
     EnhancedBigtableStubSettings.Builder stubSettingsBuilder =
         settings.getStubSettings().toBuilder();
     stubSettingsBuilder
         .mutateRowSettings()
         .retrySettings()
-        .setInitialRetryDelay(Duration.ofMillis(200));
+        .setInitialRetryDelayDuration(java.time.Duration.ofMillis(200));
+
+    stubSettingsBuilder
+        .readRowsSettings()
+        .retrySettings()
+        .setTotalTimeoutDuration(Duration.ofMillis(9000))
+        .setMaxRpcTimeoutDuration(Duration.ofMillis(9000))
+        .setRpcTimeoutMultiplier(1)
+        .setInitialRpcTimeoutDuration(Duration.ofMillis(6000))
+        .setInitialRetryDelayDuration(Duration.ofMillis(10))
+        .setRetryDelayMultiplier(1)
+        .setMaxRetryDelayDuration(Duration.ofMillis(10));
 
     stubSettingsBuilder
         .bulkMutateRowsSettings()
@@ -242,7 +241,7 @@ public class BuiltinMetricsTracerTest {
             BatchingSettings.newBuilder()
                 .setElementCountThreshold((long) batchElementCount)
                 .setRequestByteThreshold(1000L)
-                .setDelayThreshold(Duration.ofHours(1))
+                .setDelayThresholdDuration(java.time.Duration.ofHours(1))
                 .setFlowControlSettings(
                     FlowControlSettings.newBuilder()
                         .setMaxOutstandingElementCount((long) batchElementCount + 1)
@@ -260,15 +259,16 @@ public class BuiltinMetricsTracerTest {
     final ApiFunction<ManagedChannelBuilder, ManagedChannelBuilder> oldConfigurator =
         channelProvider.getChannelConfigurator();
 
+    delayProxyDetector = new DelayProxyDetector();
+
     channelProvider.setChannelConfigurator(
         (builder) -> {
           if (oldConfigurator != null) {
             builder = oldConfigurator.apply(builder);
           }
-          return builder.intercept(clientInterceptor);
+          return builder.proxyDetector(delayProxyDetector);
         });
     stubSettingsBuilder.setTransportChannelProvider(channelProvider.build());
-
     EnhancedBigtableStubSettings stubSettings = stubSettingsBuilder.build();
     stub = new EnhancedBigtableStub(stubSettings, ClientContext.create(stubSettings));
   }
@@ -329,6 +329,52 @@ public class BuiltinMetricsTracerTest {
   }
 
   @Test
+  public void testFirstResponseLatencies() {
+    Stopwatch firstResponseTimer = Stopwatch.createStarted();
+    stub.readRowsCallable()
+        .call(
+            Query.create(FIRST_RESPONSE_TABLE_ID),
+            new ResponseObserver<Row>() {
+              @Override
+              public void onStart(StreamController controller) {}
+
+              @Override
+              public void onResponse(Row response) {
+                // Server sends back 2 responses for this test
+                if (firstResponseTimer.isRunning()) {
+                  firstResponseTimer.stop();
+                }
+                try {
+                  Thread.sleep(100);
+                } catch (InterruptedException e) {
+                }
+              }
+
+              @Override
+              public void onError(Throwable t) {}
+
+              @Override
+              public void onComplete() {}
+            });
+
+    Attributes expectedAttributes =
+        baseAttributes
+            .toBuilder()
+            .put(STATUS_KEY, "OK")
+            .put(TABLE_ID_KEY, FIRST_RESPONSE_TABLE_ID)
+            .put(ZONE_ID_KEY, ZONE)
+            .put(CLUSTER_ID_KEY, CLUSTER)
+            .put(METHOD_KEY, "Bigtable.ReadRows")
+            .put(CLIENT_NAME_KEY, CLIENT_NAME)
+            .build();
+
+    MetricData metricData = getMetricData(metricReader, FIRST_RESPONSE_LATENCIES_NAME);
+
+    long value = getAggregatedValue(metricData, expectedAttributes);
+    assertThat(value).isAtMost(firstResponseTimer.elapsed(TimeUnit.MILLISECONDS));
+  }
+
+  @Test
   public void testGfeMetrics() {
     Lists.newArrayList(stub.readRowsCallable().call(Query.create(TABLE)));
 
@@ -356,7 +402,7 @@ public class BuiltinMetricsTracerTest {
             .put(STATUS_KEY, "UNAVAILABLE")
             .put(TABLE_ID_KEY, TABLE)
             .put(ZONE_ID_KEY, "global")
-            .put(CLUSTER_ID_KEY, "unspecified")
+            .put(CLUSTER_ID_KEY, "<unspecified>")
             .put(METHOD_KEY, "Bigtable.ReadRows")
             .put(CLIENT_NAME_KEY, CLIENT_NAME)
             .build();
@@ -510,7 +556,7 @@ public class BuiltinMetricsTracerTest {
             .put(STATUS_KEY, "UNAVAILABLE")
             .put(TABLE_ID_KEY, TABLE)
             .put(ZONE_ID_KEY, "global")
-            .put(CLUSTER_ID_KEY, "unspecified")
+            .put(CLUSTER_ID_KEY, "<unspecified>")
             .put(METHOD_KEY, "Bigtable.MutateRow")
             .put(CLIENT_NAME_KEY, CLIENT_NAME)
             .put(STREAMING_KEY, false)
@@ -580,7 +626,7 @@ public class BuiltinMetricsTracerTest {
             .put(STATUS_KEY, "NOT_FOUND")
             .put(TABLE_ID_KEY, BAD_TABLE_ID)
             .put(ZONE_ID_KEY, "global")
-            .put(CLUSTER_ID_KEY, "unspecified")
+            .put(CLUSTER_ID_KEY, "<unspecified>")
             .put(METHOD_KEY, "Bigtable.MutateRows")
             .put(CLIENT_NAME_KEY, CLIENT_NAME)
             .put(STREAMING_KEY, false)
@@ -601,7 +647,7 @@ public class BuiltinMetricsTracerTest {
             .put(STATUS_KEY, "UNAVAILABLE")
             .put(TABLE_ID_KEY, TABLE)
             .put(ZONE_ID_KEY, "global")
-            .put(CLUSTER_ID_KEY, "unspecified")
+            .put(CLUSTER_ID_KEY, "<unspecified>")
             .put(METHOD_KEY, "Bigtable.ReadRows")
             .put(CLIENT_NAME_KEY, CLIENT_NAME)
             .put(STREAMING_KEY, true)
@@ -657,8 +703,10 @@ public class BuiltinMetricsTracerTest {
   }
 
   @Test
-  public void testQueuedOnChannelServerStreamLatencies() {
-    stub.readRowsCallable().all().call(Query.create(TABLE));
+  public void testQueuedOnChannelServerStreamLatencies() throws Exception {
+    ApiFuture<List<Row>> f = stub.readRowsCallable().all().futureCall(Query.create(TABLE));
+    Duration proxyDelayPriorTest = delayProxyDetector.getCurrentDelayUsed();
+    f.get();
 
     MetricData clientLatency = getMetricData(metricReader, CLIENT_BLOCKING_LATENCIES_NAME);
 
@@ -672,14 +720,20 @@ public class BuiltinMetricsTracerTest {
             .put(CLIENT_NAME_KEY, CLIENT_NAME)
             .build();
 
-    long value = getAggregatedValue(clientLatency, attributes);
-    assertThat(value).isAtLeast(CHANNEL_BLOCKING_LATENCY);
+    assertThat(Duration.ofMillis(getAggregatedValue(clientLatency, attributes)))
+        .isAtLeast(
+            // Offset the expected latency to deal with asynchrony and jitter
+            CHANNEL_BLOCKING_LATENCY.minus(
+                Comparators.max(proxyDelayPriorTest, Duration.ofMillis(1))));
   }
 
   @Test
-  public void testQueuedOnChannelUnaryLatencies() {
-
-    stub.mutateRowCallable().call(RowMutation.create(TABLE, "a-key").setCell("f", "q", "v"));
+  public void testQueuedOnChannelUnaryLatencies() throws Exception {
+    ApiFuture<Void> f =
+        stub.mutateRowCallable()
+            .futureCall(RowMutation.create(TABLE, "a-key").setCell("f", "q", "v"));
+    Duration proxyDelayPriorTest = delayProxyDetector.getCurrentDelayUsed();
+    f.get();
 
     MetricData clientLatency = getMetricData(metricReader, CLIENT_BLOCKING_LATENCIES_NAME);
 
@@ -693,9 +747,11 @@ public class BuiltinMetricsTracerTest {
             .put(CLIENT_NAME_KEY, CLIENT_NAME)
             .build();
 
-    long expected = CHANNEL_BLOCKING_LATENCY * 2 / 3;
-    long actual = getAggregatedValue(clientLatency, attributes);
-    assertThat(actual).isAtLeast(expected);
+    assertThat(Duration.ofMillis(getAggregatedValue(clientLatency, attributes)))
+        .isAtLeast(
+            // Offset the expected latency to deal with asynchrony and jitter
+            CHANNEL_BLOCKING_LATENCY.minus(
+                Comparators.max(proxyDelayPriorTest, Duration.ofMillis(1))));
   }
 
   @Test
@@ -713,7 +769,7 @@ public class BuiltinMetricsTracerTest {
             .toBuilder()
             .put(STATUS_KEY, "NOT_FOUND")
             .put(TABLE_ID_KEY, BAD_TABLE_ID)
-            .put(CLUSTER_ID_KEY, "unspecified")
+            .put(CLUSTER_ID_KEY, "<unspecified>")
             .put(ZONE_ID_KEY, "global")
             .put(STREAMING_KEY, true)
             .put(METHOD_KEY, "Bigtable.ReadRows")
@@ -724,6 +780,55 @@ public class BuiltinMetricsTracerTest {
 
     MetricData opLatency = getMetricData(metricReader, OPERATION_LATENCIES_NAME);
     verifyAttributes(opLatency, expected);
+  }
+
+  @Test
+  public void testRemainingDeadline() {
+    stub.readRowsCallable().all().call(Query.create(TABLE));
+    MetricData deadlineMetric = getMetricData(metricReader, REMAINING_DEADLINE_NAME);
+
+    Attributes retryAttributes =
+        baseAttributes
+            .toBuilder()
+            .put(STATUS_KEY, "UNAVAILABLE")
+            .put(TABLE_ID_KEY, TABLE)
+            .put(METHOD_KEY, "Bigtable.ReadRows")
+            .put(ZONE_ID_KEY, "global")
+            .put(CLUSTER_ID_KEY, "<unspecified>")
+            .put(STREAMING_KEY, true)
+            .put(CLIENT_NAME_KEY, CLIENT_NAME)
+            .build();
+    HistogramPointData retryHistogramPointData =
+        deadlineMetric.getHistogramData().getPoints().stream()
+            .filter(pd -> pd.getAttributes().equals(retryAttributes))
+            .collect(Collectors.toList())
+            .get(0);
+
+    double retryRemainingDeadline = retryHistogramPointData.getSum();
+    // The retry remaining deadline should be equivalent to the original timeout.
+    assertThat(retryRemainingDeadline).isEqualTo(9000);
+
+    Attributes okAttributes =
+        baseAttributes
+            .toBuilder()
+            .put(STATUS_KEY, "OK")
+            .put(TABLE_ID_KEY, TABLE)
+            .put(ZONE_ID_KEY, ZONE)
+            .put(CLUSTER_ID_KEY, CLUSTER)
+            .put(METHOD_KEY, "Bigtable.ReadRows")
+            .put(STREAMING_KEY, true)
+            .put(CLIENT_NAME_KEY, CLIENT_NAME)
+            .build();
+    HistogramPointData okHistogramPointData =
+        deadlineMetric.getHistogramData().getPoints().stream()
+            .filter(pd -> pd.getAttributes().equals(okAttributes))
+            .collect(Collectors.toList())
+            .get(0);
+
+    double okRemainingDeadline = okHistogramPointData.getSum();
+    // first attempt latency + retry delay
+    double expected = 9000 - SERVER_LATENCY - CHANNEL_BLOCKING_LATENCY.toMillis() - 10;
+    assertThat(okRemainingDeadline).isIn(Range.closed(expected - 500, expected + 10));
   }
 
   private static class FakeService extends BigtableGrpc.BigtableImplBase {
@@ -756,6 +861,12 @@ public class BuiltinMetricsTracerTest {
     @Override
     public void readRows(
         ReadRowsRequest request, StreamObserver<ReadRowsResponse> responseObserver) {
+      if (request.getTableName().contains(FIRST_RESPONSE_TABLE_ID)) {
+        responseObserver.onNext(source.next());
+        responseObserver.onNext(source.next());
+        responseObserver.onCompleted();
+        return;
+      }
       if (request.getTableName().contains(BAD_TABLE_ID)) {
         responseObserver.onError(new StatusRuntimeException(Status.NOT_FOUND));
         return;
@@ -837,6 +948,37 @@ public class BuiltinMetricsTracerTest {
 
     public AtomicInteger getResponseCounter() {
       return responseCounter;
+    }
+  }
+
+  class DelayProxyDetector implements ProxyDetector {
+    private volatile Instant lastProxyDelay = null;
+
+    @Nullable
+    @Override
+    public ProxiedSocketAddress proxyFor(SocketAddress socketAddress) throws IOException {
+      lastProxyDelay = Instant.now();
+      try {
+        Thread.sleep(CHANNEL_BLOCKING_LATENCY.toMillis());
+      } catch (InterruptedException e) {
+
+      }
+      return null;
+    }
+
+    Duration getCurrentDelayUsed() {
+      Instant local = lastProxyDelay;
+      // If the delay was never injected
+      if (local == null) {
+        return Duration.ZERO;
+      }
+      Duration duration = Duration.between(local, Instant.now());
+
+      assertWithMessage("test burned through all channel blocking latency during setup")
+          .that(duration)
+          .isLessThan(CHANNEL_BLOCKING_LATENCY);
+
+      return duration;
     }
   }
 }

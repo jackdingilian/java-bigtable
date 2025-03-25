@@ -22,7 +22,6 @@ import com.google.cloud.bigtable.data.v2.models.ChangeStreamRecordAdapter.Change
 import com.google.cloud.bigtable.data.v2.models.Range.TimestampRange;
 import com.google.cloud.bigtable.data.v2.models.Value;
 import com.google.common.base.Preconditions;
-import org.threeten.bp.Instant;
 
 /**
  * A state machine to produce change stream records from a stream of {@link
@@ -334,7 +333,7 @@ final class ChangeStreamStateMachine<ChangeStreamRecordT> {
                 "AWAITING_NEW_STREAM_RECORD: GC mutation shouldn't have source cluster id.");
             builder.startGcMutation(
                 dataChange.getRowKey(),
-                Instant.ofEpochSecond(
+                java.time.Instant.ofEpochSecond(
                     dataChange.getCommitTimestamp().getSeconds(),
                     dataChange.getCommitTimestamp().getNanos()),
                 dataChange.getTiebreaker());
@@ -345,7 +344,7 @@ final class ChangeStreamStateMachine<ChangeStreamRecordT> {
             builder.startUserMutation(
                 dataChange.getRowKey(),
                 dataChange.getSourceClusterId(),
-                Instant.ofEpochSecond(
+                java.time.Instant.ofEpochSecond(
                     dataChange.getCommitTimestamp().getSeconds(),
                     dataChange.getCommitTimestamp().getNanos()),
                 dataChange.getTiebreaker());
@@ -485,6 +484,16 @@ final class ChangeStreamStateMachine<ChangeStreamRecordT> {
                   Value.fromProto(mod.getAddToCell().getColumnQualifier()),
                   Value.fromProto(mod.getAddToCell().getTimestamp()),
                   Value.fromProto(mod.getAddToCell().getInput()));
+              continue;
+            }
+            // Case 5: MergeToCell
+            if (mod.hasMergeToCell()) {
+              builder.mergeToCell(
+                  mod.getMergeToCell().getFamilyName(),
+                  Value.fromProto(mod.getMergeToCell().getColumnQualifier()),
+                  Value.fromProto(mod.getMergeToCell().getTimestamp()),
+                  Value.fromProto(mod.getMergeToCell().getInput()));
+              continue;
             }
             throw new IllegalStateException(
                 "Received unknown mod type. You may need to upgrade your Bigtable client.");
@@ -568,7 +577,7 @@ final class ChangeStreamStateMachine<ChangeStreamRecordT> {
       completeChangeStreamRecord =
           builder.finishChangeStreamMutation(
               dataChange.getToken(),
-              Instant.ofEpochSecond(
+              java.time.Instant.ofEpochSecond(
                   dataChange.getEstimatedLowWatermark().getSeconds(),
                   dataChange.getEstimatedLowWatermark().getNanos()));
       return AWAITING_STREAM_RECORD_CONSUME;

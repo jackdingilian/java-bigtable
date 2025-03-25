@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import com.google.api.gax.rpc.ServerStreamingCallable;
 import com.google.api.gax.rpc.UnaryCallable;
 import com.google.bigtable.v2.CheckAndMutateRowRequest;
 import com.google.bigtable.v2.CheckAndMutateRowResponse;
+import com.google.bigtable.v2.ExecuteQueryRequest;
+import com.google.bigtable.v2.ExecuteQueryResponse;
 import com.google.bigtable.v2.GenerateInitialChangeStreamPartitionsRequest;
 import com.google.bigtable.v2.GenerateInitialChangeStreamPartitionsResponse;
 import com.google.bigtable.v2.MutateRowRequest;
@@ -30,6 +32,8 @@ import com.google.bigtable.v2.MutateRowsRequest;
 import com.google.bigtable.v2.MutateRowsResponse;
 import com.google.bigtable.v2.PingAndWarmRequest;
 import com.google.bigtable.v2.PingAndWarmResponse;
+import com.google.bigtable.v2.PrepareQueryRequest;
+import com.google.bigtable.v2.PrepareQueryResponse;
 import com.google.bigtable.v2.ReadChangeStreamRequest;
 import com.google.bigtable.v2.ReadChangeStreamResponse;
 import com.google.bigtable.v2.ReadModifyWriteRowRequest;
@@ -88,6 +92,14 @@ public abstract class BigtableStub implements BackgroundResource {
   public ServerStreamingCallable<ReadChangeStreamRequest, ReadChangeStreamResponse>
       readChangeStreamCallable() {
     throw new UnsupportedOperationException("Not implemented: readChangeStreamCallable()");
+  }
+
+  public UnaryCallable<PrepareQueryRequest, PrepareQueryResponse> prepareQueryCallable() {
+    throw new UnsupportedOperationException("Not implemented: prepareQueryCallable()");
+  }
+
+  public ServerStreamingCallable<ExecuteQueryRequest, ExecuteQueryResponse> executeQueryCallable() {
+    throw new UnsupportedOperationException("Not implemented: executeQueryCallable()");
   }
 
   @Override

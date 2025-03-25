@@ -31,7 +31,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Mockito;
-import org.threeten.bp.Duration;
 
 @RunWith(JUnit4.class)
 public class BigtableTableAdminSettingsTest {
@@ -165,14 +164,16 @@ public class BigtableTableAdminSettingsTest {
     stubSettings
         .getBackupSettings()
         .setRetrySettings(
-            RetrySettings.newBuilder().setTotalTimeout(Duration.ofMinutes(812)).build());
+            RetrySettings.newBuilder()
+                .setTotalTimeout(org.threeten.bp.Duration.ofMinutes(812))
+                .build());
 
     BigtableTableAdminSettings settings = builder.build();
     checkToString(settings);
     assertThat(defaultSettings.toString()).doesNotContain("endpoint=example.com:1234");
     assertThat(settings.toString()).contains("endpoint=example.com:1234");
-    assertThat(defaultSettings.toString()).doesNotContain("totalTimeout=PT13H32M");
-    assertThat(settings.toString()).contains("totalTimeout=PT13H32M");
+    assertThat(defaultSettings.toString()).doesNotContain("totalTimeoutDuration=PT13H32M");
+    assertThat(settings.toString()).contains("totalTimeoutDuration=PT13H32M");
 
     List<String> nonStaticFields =
         Arrays.stream(BigtableTableAdminStubSettings.class.getDeclaredFields())

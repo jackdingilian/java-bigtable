@@ -41,8 +41,11 @@ import com.google.cloud.opentelemetry.detection.DetectedPlatform;
 import com.google.cloud.opentelemetry.detection.GCPPlatformDetector;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.monitoring.v3.Point;
+import com.google.monitoring.v3.ProjectName;
 import com.google.monitoring.v3.TimeInterval;
 import com.google.monitoring.v3.TimeSeries;
 import com.google.monitoring.v3.TypedValue;
@@ -63,6 +66,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,7 +93,15 @@ class BigtableExporterUtils {
    * In most cases this should look like java-${UUID}@${hostname}. The hostname will be retrieved
    * from the jvm name and fallback to the local hostname.
    */
-  static String getDefaultTaskValue() {
+  private static String defaultTaskValue = null;
+
+  static final Supplier<String> DEFAULT_TABLE_VALUE =
+      Suppliers.memoize(BigtableExporterUtils::computeDefaultTaskValue);
+
+  private static String computeDefaultTaskValue() {
+    if (defaultTaskValue != null) {
+      return defaultTaskValue;
+    }
     // Something like '<pid>@<hostname>'
     final String jvmName = ManagementFactory.getRuntimeMXBean().getName();
     // If jvm doesn't have the expected format, fallback to the local hostname
@@ -106,21 +118,28 @@ class BigtableExporterUtils {
     return "java-" + UUID.randomUUID() + jvmName;
   }
 
-  static String getProjectId(PointData pointData) {
-    return pointData.getAttributes().get(BIGTABLE_PROJECT_ID_KEY);
+  static ProjectName getProjectName(PointData pointData) {
+    return ProjectName.of(pointData.getAttributes().get(BIGTABLE_PROJECT_ID_KEY));
   }
 
-  static List<TimeSeries> convertToBigtableTimeSeries(List<MetricData> collection, String taskId) {
-    List<TimeSeries> allTimeSeries = new ArrayList<>();
+  // Returns a list of timeseries by project name
+  static Map<ProjectName, List<TimeSeries>> convertToBigtableTimeSeries(
+      Collection<MetricData> collection, String taskId) {
+    Map<ProjectName, List<TimeSeries>> allTimeSeries = new HashMap<>();
 
     for (MetricData metricData : collection) {
       if (!metricData.getInstrumentationScopeInfo().getName().equals(METER_NAME)) {
         // Filter out metric data for instruments that are not part of the bigtable builtin metrics
         continue;
       }
-      metricData.getData().getPoints().stream()
-          .map(pointData -> convertPointToBigtableTimeSeries(metricData, pointData, taskId))
-          .forEach(allTimeSeries::add);
+
+      for (PointData pd : metricData.getData().getPoints()) {
+        ProjectName projectName = getProjectName(pd);
+        List<TimeSeries> current =
+            allTimeSeries.computeIfAbsent(projectName, ignored -> new ArrayList<>());
+        current.add(convertPointToBigtableTimeSeries(metricData, pd, taskId));
+        allTimeSeries.put(projectName, current);
+      }
     }
 
     return allTimeSeries;
@@ -148,7 +167,20 @@ class BigtableExporterUtils {
   }
 
   @Nullable
-  static MonitoredResource detectResource() {
+  static MonitoredResource detectResourceSafe() {
+    try {
+      return detectResource();
+    } catch (Exception e) {
+      logger.log(
+          Level.WARNING,
+          "Failed to detect resource, will skip exporting application level metrics ",
+          e);
+      return null;
+    }
+  }
+
+  @Nullable
+  private static MonitoredResource detectResource() {
     GCPPlatformDetector detector = GCPPlatformDetector.DEFAULT_INSTANCE;
     DetectedPlatform detectedPlatform = detector.detectPlatform();
     MonitoredResource monitoredResource = null;

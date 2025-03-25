@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ import com.google.bigtable.admin.v2.SnapshotName;
 import com.google.bigtable.admin.v2.SnapshotTableRequest;
 import com.google.bigtable.admin.v2.Table;
 import com.google.bigtable.admin.v2.TableName;
+import com.google.bigtable.admin.v2.Type;
 import com.google.bigtable.admin.v2.UndeleteTableRequest;
 import com.google.bigtable.admin.v2.UpdateAuthorizedViewRequest;
 import com.google.bigtable.admin.v2.UpdateBackupRequest;
@@ -156,6 +157,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     mockBigtableTableAdmin.addResponse(expectedResponse);
 
@@ -205,6 +207,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     mockBigtableTableAdmin.addResponse(expectedResponse);
 
@@ -254,6 +257,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -315,6 +319,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -374,6 +379,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -435,6 +441,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -582,6 +589,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     mockBigtableTableAdmin.addResponse(expectedResponse);
 
@@ -625,6 +633,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     mockBigtableTableAdmin.addResponse(expectedResponse);
 
@@ -668,6 +677,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -790,6 +800,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -841,6 +852,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -1309,6 +1321,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     mockBigtableTableAdmin.addResponse(expectedResponse);
 
@@ -1356,6 +1369,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     mockBigtableTableAdmin.addResponse(expectedResponse);
 
@@ -2096,6 +2110,7 @@ public class BaseBigtableTableAdminClientTest {
             .setEndTime(Timestamp.newBuilder().build())
             .setSizeBytes(-1796325715)
             .setEncryptionInfo(EncryptionInfo.newBuilder().build())
+            .setHotToStandardTime(Timestamp.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -2155,6 +2170,7 @@ public class BaseBigtableTableAdminClientTest {
             .setEndTime(Timestamp.newBuilder().build())
             .setSizeBytes(-1796325715)
             .setEncryptionInfo(EncryptionInfo.newBuilder().build())
+            .setHotToStandardTime(Timestamp.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -2214,6 +2230,7 @@ public class BaseBigtableTableAdminClientTest {
             .setEndTime(Timestamp.newBuilder().build())
             .setSizeBytes(-1796325715)
             .setEncryptionInfo(EncryptionInfo.newBuilder().build())
+            .setHotToStandardTime(Timestamp.newBuilder().build())
             .build();
     mockBigtableTableAdmin.addResponse(expectedResponse);
 
@@ -2259,6 +2276,7 @@ public class BaseBigtableTableAdminClientTest {
             .setEndTime(Timestamp.newBuilder().build())
             .setSizeBytes(-1796325715)
             .setEncryptionInfo(EncryptionInfo.newBuilder().build())
+            .setHotToStandardTime(Timestamp.newBuilder().build())
             .build();
     mockBigtableTableAdmin.addResponse(expectedResponse);
 
@@ -2304,6 +2322,7 @@ public class BaseBigtableTableAdminClientTest {
             .setEndTime(Timestamp.newBuilder().build())
             .setSizeBytes(-1796325715)
             .setEncryptionInfo(EncryptionInfo.newBuilder().build())
+            .setHotToStandardTime(Timestamp.newBuilder().build())
             .build();
     mockBigtableTableAdmin.addResponse(expectedResponse);
 
@@ -2506,6 +2525,7 @@ public class BaseBigtableTableAdminClientTest {
             .setRestoreInfo(RestoreInfo.newBuilder().build())
             .setChangeStreamConfig(ChangeStreamConfig.newBuilder().build())
             .setDeletionProtection(true)
+            .setRowKeySchema(Type.Struct.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -2569,6 +2589,7 @@ public class BaseBigtableTableAdminClientTest {
             .setEndTime(Timestamp.newBuilder().build())
             .setSizeBytes(-1796325715)
             .setEncryptionInfo(EncryptionInfo.newBuilder().build())
+            .setHotToStandardTime(Timestamp.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -2632,6 +2653,7 @@ public class BaseBigtableTableAdminClientTest {
             .setEndTime(Timestamp.newBuilder().build())
             .setSizeBytes(-1796325715)
             .setEncryptionInfo(EncryptionInfo.newBuilder().build())
+            .setHotToStandardTime(Timestamp.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -2695,6 +2717,7 @@ public class BaseBigtableTableAdminClientTest {
             .setEndTime(Timestamp.newBuilder().build())
             .setSizeBytes(-1796325715)
             .setEncryptionInfo(EncryptionInfo.newBuilder().build())
+            .setHotToStandardTime(Timestamp.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()
@@ -2758,6 +2781,7 @@ public class BaseBigtableTableAdminClientTest {
             .setEndTime(Timestamp.newBuilder().build())
             .setSizeBytes(-1796325715)
             .setEncryptionInfo(EncryptionInfo.newBuilder().build())
+            .setHotToStandardTime(Timestamp.newBuilder().build())
             .build();
     Operation resultOperation =
         Operation.newBuilder()

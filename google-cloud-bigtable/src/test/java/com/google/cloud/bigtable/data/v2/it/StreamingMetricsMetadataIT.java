@@ -29,7 +29,6 @@ import com.google.cloud.bigtable.data.v2.BigtableDataSettings;
 import com.google.cloud.bigtable.data.v2.models.Query;
 import com.google.cloud.bigtable.data.v2.models.Row;
 import com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsConstants;
-import com.google.cloud.bigtable.data.v2.stub.metrics.BuiltinMetricsView;
 import com.google.cloud.bigtable.data.v2.stub.metrics.CustomOpenTelemetryMetricsProvider;
 import com.google.cloud.bigtable.test_helpers.env.EmulatorEnv;
 import com.google.cloud.bigtable.test_helpers.env.TestEnvRule;
@@ -72,7 +71,7 @@ public class StreamingMetricsMetadataIT {
 
     SdkMeterProviderBuilder meterProvider =
         SdkMeterProvider.builder().registerMetricReader(metricReader);
-    BuiltinMetricsView.registerBuiltinMetrics(testEnvRule.env().getProjectId(), meterProvider);
+    CustomOpenTelemetryMetricsProvider.setupSdkMeterProvider(meterProvider);
     OpenTelemetry openTelemetry =
         OpenTelemetrySdk.builder().setMeterProvider(meterProvider.build()).build();
 
@@ -167,9 +166,9 @@ public class StreamingMetricsMetadataIT {
 
     assertThat(pointData)
         .comparingElementsUsing(POINT_DATA_CLUSTER_ID_CONTAINS)
-        .contains("unspecified");
+        .contains("<unspecified>");
     assertThat(pointData).comparingElementsUsing(POINT_DATA_ZONE_ID_CONTAINS).contains("global");
-    assertThat(clusterAttributes).contains("unspecified");
+    assertThat(clusterAttributes).contains("<unspecified>");
     assertThat(zoneAttributes).contains("global");
   }
 }

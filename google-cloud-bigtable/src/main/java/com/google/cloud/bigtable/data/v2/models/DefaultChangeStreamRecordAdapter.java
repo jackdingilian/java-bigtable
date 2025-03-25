@@ -20,9 +20,9 @@ import com.google.bigtable.v2.ReadChangeStreamResponse;
 import com.google.cloud.bigtable.data.v2.models.Range.TimestampRange;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
+import java.time.Instant;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.threeten.bp.Instant;
 
 /**
  * Default implementation of a {@link ChangeStreamRecordAdapter} that uses {@link
@@ -112,8 +112,7 @@ public class DefaultChangeStreamRecordAdapter
 
     /** {@inheritDoc} */
     @Override
-    public void startGcMutation(
-        @Nonnull ByteString rowKey, Instant commitTimestamp, int tieBreaker) {
+    public void startGcMutation(ByteString rowKey, Instant commitTimestamp, int tieBreaker) {
       this.changeStreamMutationBuilder =
           ChangeStreamMutation.createGcMutation(rowKey, commitTimestamp, tieBreaker);
     }
@@ -142,6 +141,15 @@ public class DefaultChangeStreamRecordAdapter
       this.changeStreamMutationBuilder.addToCell(familyName, qualifier, timestamp, input);
     }
 
+    @Override
+    public void mergeToCell(
+        @Nonnull String familyName,
+        @Nonnull Value qualifier,
+        @Nonnull Value timestamp,
+        @Nonnull Value input) {
+      this.changeStreamMutationBuilder.mergeToCell(familyName, qualifier, timestamp, input);
+    }
+
     /** {@inheritDoc} */
     @Override
     public void startCell(String family, ByteString qualifier, long timestampMicros) {
@@ -167,9 +175,9 @@ public class DefaultChangeStreamRecordAdapter
     /** {@inheritDoc} */
     @Override
     public ChangeStreamRecord finishChangeStreamMutation(
-        @Nonnull String token, Instant estimatedLowWatermark) {
+        String token, Instant estimatedLowWatermark) {
       this.changeStreamMutationBuilder.setToken(token);
-      this.changeStreamMutationBuilder.setEstimatedLowWatermark(estimatedLowWatermark);
+      this.changeStreamMutationBuilder.setEstimatedLowWatermarkTime(estimatedLowWatermark);
       return this.changeStreamMutationBuilder.build();
     }
 

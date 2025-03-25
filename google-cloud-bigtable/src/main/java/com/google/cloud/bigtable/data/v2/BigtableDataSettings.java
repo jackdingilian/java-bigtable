@@ -30,6 +30,7 @@ import com.google.cloud.bigtable.data.v2.models.Row;
 import com.google.cloud.bigtable.data.v2.stub.BigtableBatchingCallSettings;
 import com.google.cloud.bigtable.data.v2.stub.EnhancedBigtableStubSettings;
 import com.google.cloud.bigtable.data.v2.stub.metrics.MetricsProvider;
+import com.google.cloud.bigtable.data.v2.stub.metrics.NoopMetricsProvider;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import io.grpc.ManagedChannelBuilder;
@@ -38,7 +39,6 @@ import java.util.List;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.threeten.bp.Duration;
 
 /**
  * Settings class to configure an instance of {@link BigtableDataClient}.
@@ -127,14 +127,17 @@ public final class BigtableDataSettings {
         .setEndpoint(hostname + ":" + port)
         // disable channel refreshing when creating an emulator
         .setRefreshingChannel(false)
+        .setMetricsProvider(NoopMetricsProvider.INSTANCE) // disable exporting metrics for emulator
         .setTransportChannelProvider(
             InstantiatingGrpcChannelProvider.newBuilder()
                 .setMaxInboundMessageSize(256 * 1024 * 1024)
                 .setChannelPoolSettings(ChannelPoolSettings.staticallySized(1))
                 .setChannelConfigurator(ManagedChannelBuilder::usePlaintext)
-                .setKeepAliveTime(Duration.ofSeconds(61)) // sends ping in this interval
-                .setKeepAliveTimeout(
-                    Duration.ofSeconds(10)) // wait this long before considering the connection dead
+                .setKeepAliveTimeDuration(
+                    java.time.Duration.ofSeconds(61)) // sends ping in this interval
+                .setKeepAliveTimeoutDuration(
+                    java.time.Duration.ofSeconds(
+                        10)) // wait this long before considering the connection dead
                 .build());
 
     LOGGER.info("Connecting to the Bigtable emulator at " + hostname + ":" + port);

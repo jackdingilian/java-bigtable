@@ -35,6 +35,9 @@ import com.google.api.gax.rpc.UnaryCallSettings;
 import com.google.bigtable.v2.FeatureFlags;
 import com.google.bigtable.v2.PingAndWarmRequest;
 import com.google.cloud.bigtable.Version;
+import com.google.cloud.bigtable.data.v2.internal.PrepareQueryRequest;
+import com.google.cloud.bigtable.data.v2.internal.PrepareResponse;
+import com.google.cloud.bigtable.data.v2.internal.SqlRow;
 import com.google.cloud.bigtable.data.v2.models.ChangeStreamRecord;
 import com.google.cloud.bigtable.data.v2.models.ConditionalRowMutation;
 import com.google.cloud.bigtable.data.v2.models.KeyOffset;
@@ -44,6 +47,7 @@ import com.google.cloud.bigtable.data.v2.models.ReadChangeStreamQuery;
 import com.google.cloud.bigtable.data.v2.models.ReadModifyWriteRow;
 import com.google.cloud.bigtable.data.v2.models.Row;
 import com.google.cloud.bigtable.data.v2.models.RowMutation;
+import com.google.cloud.bigtable.data.v2.models.sql.BoundStatement;
 import com.google.cloud.bigtable.data.v2.stub.metrics.DefaultMetricsProvider;
 import com.google.cloud.bigtable.data.v2.stub.metrics.MetricsProvider;
 import com.google.cloud.bigtable.data.v2.stub.mutaterows.MutateRowsBatchingDescriptor;
@@ -59,9 +63,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.threeten.bp.Duration;
 
 /**
@@ -101,7 +107,14 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
   private static final String SERVER_DEFAULT_APP_PROFILE_ID = "";
 
   // TODO(meeral-k): add documentation
-  private static final String CBT_ENABLE_DIRECTPATH = "CBT_ENABLE_DIRECTPATH";
+  private static final boolean DIRECT_PATH_ENABLED =
+      Boolean.parseBoolean(System.getenv("CBT_ENABLE_DIRECTPATH"));
+
+  private static final boolean SKIP_TRAILERS =
+      Optional.ofNullable(System.getenv("CBT_SKIP_HEADERS"))
+          .map(Boolean::parseBoolean)
+          .orElse(true);
+
   private static final Set<Code> IDEMPOTENT_RETRY_CODES =
       ImmutableSet.of(Code.DEADLINE_EXCEEDED, Code.UNAVAILABLE);
 
@@ -187,6 +200,38 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
           .setTotalTimeout(Duration.ofHours(12))
           .build();
 
+  // Allow retrying ABORTED statuses. These will be returned by the server when the client is
+  // too slow to read the responses.
+  private static final Set<Code> EXECUTE_QUERY_RETRY_CODES =
+      ImmutableSet.<Code>builder().addAll(IDEMPOTENT_RETRY_CODES).add(Code.ABORTED).build();
+
+  // We use the same configuration as READ_ROWS
+  private static final RetrySettings EXECUTE_QUERY_RETRY_SETTINGS =
+      RetrySettings.newBuilder()
+          .setInitialRetryDelay(Duration.ofMillis(10))
+          .setRetryDelayMultiplier(2.0)
+          .setMaxRetryDelay(Duration.ofMinutes(1))
+          .setMaxAttempts(10)
+          .setJittered(true)
+          .setInitialRpcTimeout(Duration.ofMinutes(30))
+          .setRpcTimeoutMultiplier(1.0)
+          .setMaxRpcTimeout(Duration.ofMinutes(30))
+          .setTotalTimeout(Duration.ofHours(12))
+          .build();
+
+  // Similar to IDEMPOTENT but with a lower initial rpc timeout since we expect
+  // these calls to be quick in most circumstances
+  private static final RetrySettings PREPARE_QUERY_RETRY_SETTINGS =
+      RetrySettings.newBuilder()
+          .setInitialRetryDelay(Duration.ofMillis(10))
+          .setRetryDelayMultiplier(2)
+          .setMaxRetryDelay(Duration.ofMinutes(1))
+          .setInitialRpcTimeout(Duration.ofSeconds(5))
+          .setRpcTimeoutMultiplier(1.0)
+          .setMaxRpcTimeout(Duration.ofSeconds(20))
+          .setTotalTimeout(Duration.ofMinutes(10))
+          .build();
+
   /**
    * Scopes that are equivalent to JWT's audience.
    *
@@ -216,6 +261,7 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
   private final Map<String, String> jwtAudienceMapping;
   private final boolean enableRoutingCookie;
   private final boolean enableRetryInfo;
+  private final boolean enableSkipTrailers;
 
   private final ServerStreamingCallSettings<Query, Row> readRowsSettings;
   private final UnaryCallSettings<Query, Row> readRowSettings;
@@ -230,10 +276,13 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
   private final ServerStreamingCallSettings<ReadChangeStreamQuery, ChangeStreamRecord>
       readChangeStreamSettings;
   private final UnaryCallSettings<PingAndWarmRequest, Void> pingAndWarmSettings;
+  private final ServerStreamingCallSettings<BoundStatement, SqlRow> executeQuerySettings;
+  private final UnaryCallSettings<PrepareQueryRequest, PrepareResponse> prepareQuerySettings;
 
   private final FeatureFlags featureFlags;
 
   private final MetricsProvider metricsProvider;
+  @Nullable private final String metricsEndpoint;
 
   private EnhancedBigtableStubSettings(Builder builder) {
     super(builder);
@@ -261,7 +310,9 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
     jwtAudienceMapping = builder.jwtAudienceMapping;
     enableRoutingCookie = builder.enableRoutingCookie;
     enableRetryInfo = builder.enableRetryInfo;
+    enableSkipTrailers = builder.enableSkipTrailers;
     metricsProvider = builder.metricsProvider;
+    metricsEndpoint = builder.metricsEndpoint;
 
     // Per method settings.
     readRowsSettings = builder.readRowsSettings.build();
@@ -276,6 +327,8 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
         builder.generateInitialChangeStreamPartitionsSettings.build();
     readChangeStreamSettings = builder.readChangeStreamSettings.build();
     pingAndWarmSettings = builder.pingAndWarmSettings.build();
+    executeQuerySettings = builder.executeQuerySettings.build();
+    prepareQuerySettings = builder.prepareQuerySettings.build();
     featureFlags = builder.featureFlags.build();
   }
 
@@ -345,15 +398,31 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
     return enableRetryInfo;
   }
 
+  boolean getEnableSkipTrailers() {
+    return enableSkipTrailers;
+  }
+
+  /**
+   * Gets the Google Cloud Monitoring endpoint for publishing client side metrics. If it's null,
+   * client will publish metrics to the default monitoring endpoint.
+   */
+  @Nullable
+  public String getMetricsEndpoint() {
+    return metricsEndpoint;
+  }
+
   /** Returns a builder for the default ChannelProvider for this service. */
   public static InstantiatingGrpcChannelProvider.Builder defaultGrpcTransportProviderBuilder() {
-    Boolean isDirectpathEnabled = Boolean.parseBoolean(System.getenv(CBT_ENABLE_DIRECTPATH));
     InstantiatingGrpcChannelProvider.Builder grpcTransportProviderBuilder =
         BigtableStubSettings.defaultGrpcTransportProviderBuilder();
-    if (isDirectpathEnabled) {
+    if (DIRECT_PATH_ENABLED) {
       // Attempts direct access to CBT service over gRPC to improve throughput,
       // whether the attempt is allowed is totally controlled by service owner.
-      grpcTransportProviderBuilder.setAttemptDirectPathXds().setAttemptDirectPath(true);
+      grpcTransportProviderBuilder
+          .setAttemptDirectPathXds()
+          .setAttemptDirectPath(true)
+          // Allow using non-default service account in DirectPath.
+          .setAllowNonDefaultServiceAccount(true);
     }
     return grpcTransportProviderBuilder
         .setChannelPoolSettings(
@@ -614,6 +683,35 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
     return readChangeStreamSettings;
   }
 
+  public ServerStreamingCallSettings<BoundStatement, SqlRow> executeQuerySettings() {
+    return executeQuerySettings;
+  }
+
+  /**
+   * Returns the object with the settings used for a PrepareQuery request. This is used by
+   * PreparedStatement to manage PreparedQueries.
+   *
+   * <p>This is an idempotent and non-streaming operation.
+   *
+   * <p>Default retry and timeout settings:
+   *
+   * <ul>
+   *   <li>Retry {@link UnaryCallSettings.Builder#setRetryableCodes error codes} are: {@link
+   *       Code#DEADLINE_EXCEEDED} and {@link Code#UNAVAILABLE}
+   *   <li>RetryDelay between failed attempts {@link RetrySettings.Builder#setInitialRetryDelay
+   *       starts} at 10ms and {@link RetrySettings.Builder#setRetryDelayMultiplier increases
+   *       exponentially} by a factor of 2 until a {@link RetrySettings.Builder#setMaxRetryDelay
+   *       maximum of} 1 minute.
+   *   <li>The default timeout for {@link RetrySettings.Builder#setMaxRpcTimeout each attempt} is 5
+   *       seconds and the timeout for the {@link RetrySettings.Builder#setTotalTimeout entire
+   *       operation} across all of the attempts is 10 mins.
+   * </ul>
+   *
+   * @see RetrySettings for more explanation.
+   */
+  public UnaryCallSettings<PrepareQueryRequest, PrepareResponse> prepareQuerySettings() {
+    return prepareQuerySettings;
+  }
   /**
    * Returns the object with the settings used for calls to PingAndWarm.
    *
@@ -639,6 +737,7 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
     private Map<String, String> jwtAudienceMapping;
     private boolean enableRoutingCookie;
     private boolean enableRetryInfo;
+    private boolean enableSkipTrailers;
 
     private final ServerStreamingCallSettings.Builder<Query, Row> readRowsSettings;
     private final UnaryCallSettings.Builder<Query, Row> readRowSettings;
@@ -654,10 +753,14 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
     private final ServerStreamingCallSettings.Builder<ReadChangeStreamQuery, ChangeStreamRecord>
         readChangeStreamSettings;
     private final UnaryCallSettings.Builder<PingAndWarmRequest, Void> pingAndWarmSettings;
+    private final ServerStreamingCallSettings.Builder<BoundStatement, SqlRow> executeQuerySettings;
+    private final UnaryCallSettings.Builder<PrepareQueryRequest, PrepareResponse>
+        prepareQuerySettings;
 
     private FeatureFlags.Builder featureFlags;
 
     private MetricsProvider metricsProvider;
+    @Nullable private String metricsEndpoint;
 
     /**
      * Initializes a new Builder with sane defaults for all settings.
@@ -675,6 +778,7 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
       setCredentialsProvider(defaultCredentialsProviderBuilder().build());
       this.enableRoutingCookie = true;
       this.enableRetryInfo = true;
+      this.enableSkipTrailers = SKIP_TRAILERS;
       metricsProvider = DefaultMetricsProvider.INSTANCE;
 
       // Defaults provider
@@ -782,8 +886,24 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
               .setTotalTimeout(PRIME_REQUEST_TIMEOUT)
               .build());
 
+      executeQuerySettings = ServerStreamingCallSettings.newBuilder();
+      executeQuerySettings
+          .setRetryableCodes(EXECUTE_QUERY_RETRY_CODES)
+          .setRetrySettings(EXECUTE_QUERY_RETRY_SETTINGS)
+          .setIdleTimeout(Duration.ofMinutes(5))
+          .setWaitTimeout(Duration.ofMinutes(5));
+
+      prepareQuerySettings = UnaryCallSettings.newUnaryCallSettingsBuilder();
+      prepareQuerySettings
+          .setRetryableCodes(IDEMPOTENT_RETRY_CODES)
+          .setRetrySettings(PREPARE_QUERY_RETRY_SETTINGS);
+
       featureFlags =
-          FeatureFlags.newBuilder().setReverseScans(true).setLastScannedRowResponses(true);
+          FeatureFlags.newBuilder()
+              .setReverseScans(true)
+              .setLastScannedRowResponses(true)
+              .setDirectAccessRequested(DIRECT_PATH_ENABLED)
+              .setTrafficDirectorEnabled(DIRECT_PATH_ENABLED);
     }
 
     private Builder(EnhancedBigtableStubSettings settings) {
@@ -797,6 +917,7 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
       enableRoutingCookie = settings.enableRoutingCookie;
       enableRetryInfo = settings.enableRetryInfo;
       metricsProvider = settings.metricsProvider;
+      metricsEndpoint = settings.getMetricsEndpoint();
 
       // Per method settings.
       readRowsSettings = settings.readRowsSettings.toBuilder();
@@ -811,6 +932,8 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
           settings.generateInitialChangeStreamPartitionsSettings.toBuilder();
       readChangeStreamSettings = settings.readChangeStreamSettings.toBuilder();
       pingAndWarmSettings = settings.pingAndWarmSettings.toBuilder();
+      executeQuerySettings = settings.executeQuerySettings().toBuilder();
+      prepareQuerySettings = settings.prepareQuerySettings().toBuilder();
       featureFlags = settings.featureFlags.toBuilder();
     }
     // <editor-fold desc="Private Helpers">
@@ -964,6 +1087,24 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
       return this.metricsProvider;
     }
 
+    /**
+     * Built-in client side metrics are published through Google Cloud Monitoring endpoint. This
+     * setting overrides the default endpoint for publishing the metrics.
+     */
+    public Builder setMetricsEndpoint(String endpoint) {
+      this.metricsEndpoint = endpoint;
+      return this;
+    }
+
+    /**
+     * Get the Google Cloud Monitoring endpoint for publishing client side metrics. If it's null,
+     * client will publish metrics to the default monitoring endpoint.
+     */
+    @Nullable
+    public String getMetricsEndpoint() {
+      return metricsEndpoint;
+    }
+
     @InternalApi("Used for internal testing")
     public Map<String, String> getJwtAudienceMapping() {
       return jwtAudienceMapping;
@@ -1005,6 +1146,11 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
     @BetaApi("RetryInfo is not currently stable and may change in the future")
     public boolean getEnableRetryInfo() {
       return enableRetryInfo;
+    }
+
+    Builder setEnableSkipTrailers(boolean enabled) {
+      this.enableSkipTrailers = enabled;
+      return this;
     }
 
     /** Returns the builder for the settings used for calls to readRows. */
@@ -1066,6 +1212,23 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
       return pingAndWarmSettings;
     }
 
+    /**
+     * Returns the builder for the settings used for calls to ExecuteQuery
+     *
+     * <p>Note that this will currently ignore any retry settings other than deadlines. ExecuteQuery
+     * requests will not be retried currently.
+     */
+    @BetaApi
+    public ServerStreamingCallSettings.Builder<BoundStatement, SqlRow> executeQuerySettings() {
+      return executeQuerySettings;
+    }
+
+    /** Returns the builder with the settings used for calls to PrepareQuery */
+    @BetaApi
+    public UnaryCallSettings.Builder<PrepareQueryRequest, PrepareResponse> prepareQuerySettings() {
+      return prepareQuerySettings;
+    }
+
     @SuppressWarnings("unchecked")
     public EnhancedBigtableStubSettings build() {
       Preconditions.checkState(projectId != null, "Project id must be set");
@@ -1123,6 +1286,7 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
         .add("jwtAudienceMapping", jwtAudienceMapping)
         .add("enableRoutingCookie", enableRoutingCookie)
         .add("enableRetryInfo", enableRetryInfo)
+        .add("enableSkipTrailers", enableSkipTrailers)
         .add("readRowsSettings", readRowsSettings)
         .add("readRowSettings", readRowSettings)
         .add("sampleRowKeysSettings", sampleRowKeysSettings)
@@ -1136,7 +1300,10 @@ public class EnhancedBigtableStubSettings extends StubSettings<EnhancedBigtableS
             generateInitialChangeStreamPartitionsSettings)
         .add("readChangeStreamSettings", readChangeStreamSettings)
         .add("pingAndWarmSettings", pingAndWarmSettings)
+        .add("executeQuerySettings", executeQuerySettings)
+        .add("prepareQuerySettings", prepareQuerySettings)
         .add("metricsProvider", metricsProvider)
+        .add("metricsEndpoint", metricsEndpoint)
         .add("parent", super.toString())
         .toString();
   }

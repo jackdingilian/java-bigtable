@@ -36,6 +36,150 @@ jobs:
     - run: .kokoro/build.sh
       env:
         JOB_TYPE: test
+  units1:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 11, 17, 21 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units2:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 11, 17, 21 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units3:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 11, 17, 21 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units4:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 11, 17, 21 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units5:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 11, 17, 21 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units6:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 11, 17, 21 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units7:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 11, 17, 21 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units8:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 11, 17, 21 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units9:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 11, 17, 21 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
   units-java8:
     # Building using Java 17 and run the tests with Java 8 runtime
     name: "units (8)"
@@ -72,6 +216,174 @@ jobs:
     - run: .kokoro/build.bat
       env:
         JOB_TYPE: test
+  windows1:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
+  windows2:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
+  windows3:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
+  windows4:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
+  windows5:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
+  windows6:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
+  windows7:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
+  windows8:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
+  windows9:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
+  windows10:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
+  windows11:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
+  windows12:
+    runs-on: windows-latest
+    steps:
+      - name: Support longpaths
+        run: git config --system core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 8
+      - run: java -version
+      - run: .kokoro/build.bat
+        env:
+          JOB_TYPE: test
   dependencies:
     runs-on: ubuntu-latest
     strategy:

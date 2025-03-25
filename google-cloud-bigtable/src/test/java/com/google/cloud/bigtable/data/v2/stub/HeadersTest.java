@@ -15,6 +15,10 @@
  */
 package com.google.cloud.bigtable.data.v2.stub;
 
+import static com.google.cloud.bigtable.data.v2.stub.sql.SqlProtoFactory.columnMetadata;
+import static com.google.cloud.bigtable.data.v2.stub.sql.SqlProtoFactory.metadata;
+import static com.google.cloud.bigtable.data.v2.stub.sql.SqlProtoFactory.preparedStatement;
+import static com.google.cloud.bigtable.data.v2.stub.sql.SqlProtoFactory.stringType;
 import static com.google.common.truth.Truth.assertThat;
 
 import com.google.api.gax.batching.Batcher;
@@ -27,6 +31,8 @@ import com.google.bigtable.v2.MutateRowRequest;
 import com.google.bigtable.v2.MutateRowResponse;
 import com.google.bigtable.v2.MutateRowsRequest;
 import com.google.bigtable.v2.MutateRowsResponse;
+import com.google.bigtable.v2.PrepareQueryRequest;
+import com.google.bigtable.v2.PrepareQueryResponse;
 import com.google.bigtable.v2.ReadModifyWriteRowRequest;
 import com.google.bigtable.v2.ReadModifyWriteRowResponse;
 import com.google.bigtable.v2.ReadRowsRequest;
@@ -42,6 +48,7 @@ import com.google.cloud.bigtable.data.v2.models.Query;
 import com.google.cloud.bigtable.data.v2.models.ReadModifyWriteRow;
 import com.google.cloud.bigtable.data.v2.models.RowMutation;
 import com.google.cloud.bigtable.data.v2.models.RowMutationEntry;
+import com.google.cloud.bigtable.data.v2.models.sql.PreparedStatement;
 import com.google.rpc.Status;
 import io.grpc.Metadata;
 import io.grpc.Server;
@@ -49,6 +56,7 @@ import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.stub.StreamObserver;
+import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import org.junit.After;
@@ -62,8 +70,10 @@ public class HeadersTest {
   private static final String PROJECT_ID = "fake-project";
   private static final String INSTANCE_ID = "fake-instance";
   private static final String TABLE_ID = "fake-table";
-  private static final String TABLE_NAME =
-      "projects%2F" + PROJECT_ID + "%2Finstances%2F" + INSTANCE_ID + "%2Ftables%2F" + TABLE_ID;
+
+  private static final String INSTANCE_NAME =
+      "projects%2F" + PROJECT_ID + "%2Finstances%2F" + INSTANCE_ID;
+  private static final String TABLE_NAME = INSTANCE_NAME + "%2Ftables%2F" + TABLE_ID;
   private static final String APP_PROFILE_ID = "fake-profile";
   private static final String TEST_FIXED_HEADER_STRING = "test_fixed_header";
 
@@ -160,7 +170,25 @@ public class HeadersTest {
     verifyHeaderSent();
   }
 
+  @Test
+  public void executeQueryTest() {
+    PreparedStatement preparedStatement =
+        preparedStatement(metadata(columnMetadata("foo", stringType())));
+    client.executeQuery(preparedStatement.bind().build());
+    verifyHeaderSent(true);
+  }
+
+  @Test
+  public void prepareQueryTest() {
+    client.prepareStatement("SELECT * FROM table", new HashMap<>());
+    verifyHeaderSent(true);
+  }
+
   private void verifyHeaderSent() {
+    verifyHeaderSent(false);
+  }
+
+  private void verifyHeaderSent(boolean useInstance) {
     Metadata metadata;
     try {
       metadata = sentMetadata.take();
@@ -169,7 +197,11 @@ public class HeadersTest {
     }
 
     String requestParamsvalue = metadata.get(X_GOOG_REQUEST_PARAMS_KEY);
-    assertThat(requestParamsvalue).containsMatch("(^|.*&)table_name=" + TABLE_NAME + "($|&.*)");
+    if (useInstance) {
+      assertThat(requestParamsvalue).containsMatch("(^|.*&)name=" + INSTANCE_NAME + "($|&.*)");
+    } else {
+      assertThat(requestParamsvalue).containsMatch("(^|.*&)table_name=" + TABLE_NAME + "($|&.*)");
+    }
     assertThat(requestParamsvalue)
         .containsMatch("(^|.*&)app_profile_id=" + APP_PROFILE_ID + "($|&.*)");
 
@@ -240,6 +272,17 @@ public class HeadersTest {
         ReadModifyWriteRowRequest request,
         StreamObserver<ReadModifyWriteRowResponse> responseObserver) {
       responseObserver.onNext(ReadModifyWriteRowResponse.getDefaultInstance());
+      responseObserver.onCompleted();
+    }
+
+    @Override
+    public void prepareQuery(
+        PrepareQueryRequest request, StreamObserver<PrepareQueryResponse> responseObserver) {
+      responseObserver.onNext(
+          // Need to set metadata for response to parse
+          PrepareQueryResponse.newBuilder()
+              .setMetadata(metadata(columnMetadata("foo", stringType())))
+              .build());
       responseObserver.onCompleted();
     }
   }

@@ -63,6 +63,7 @@ import com.google.cloud.bigtable.admin.v2.BaseBigtableTableAdminClient.ListTable
 import com.google.cloud.bigtable.admin.v2.internal.NameUtil;
 import com.google.cloud.bigtable.admin.v2.models.AuthorizedView;
 import com.google.cloud.bigtable.admin.v2.models.Backup;
+import com.google.cloud.bigtable.admin.v2.models.ConsistencyRequest;
 import com.google.cloud.bigtable.admin.v2.models.CopyBackupRequest;
 import com.google.cloud.bigtable.admin.v2.models.CreateAuthorizedViewRequest;
 import com.google.cloud.bigtable.admin.v2.models.CreateBackupRequest;
@@ -155,6 +156,8 @@ public class BigtableTableAdminClientTests {
   @Mock private UnaryCallable<ListTablesRequest, ListTablesPagedResponse> mockListTableCallable;
   @Mock private UnaryCallable<DropRowRangeRequest, Empty> mockDropRowRangeCallable;
   @Mock private UnaryCallable<TableName, Void> mockAwaitReplicationCallable;
+
+  @Mock private UnaryCallable<ConsistencyRequest, Void> mockAwaitConsistencyCallable;
 
   @Mock
   private OperationCallable<
@@ -256,6 +259,24 @@ public class BigtableTableAdminClientTests {
                         ColumnFamily.newBuilder()
                             .setGcRule(GcRule.getDefaultInstance())
                             .setValueType(TypeProtos.intSumType())
+                            .build())
+                    .putColumnFamilies(
+                        "cf2",
+                        ColumnFamily.newBuilder()
+                            .setGcRule(GcRule.getDefaultInstance())
+                            .setValueType(TypeProtos.intMinType())
+                            .build())
+                    .putColumnFamilies(
+                        "cf3",
+                        ColumnFamily.newBuilder()
+                            .setGcRule(GcRule.getDefaultInstance())
+                            .setValueType(TypeProtos.intMaxType())
+                            .build())
+                    .putColumnFamilies(
+                        "cf4",
+                        ColumnFamily.newBuilder()
+                            .setGcRule(GcRule.getDefaultInstance())
+                            .setValueType(TypeProtos.intHllType())
                             .build()))
             .build();
 
@@ -267,7 +288,49 @@ public class BigtableTableAdminClientTests {
 
     // Execute
     Table result =
-        adminClient.createTable(CreateTableRequest.of(TABLE_ID).addFamily("cf1", Type.int64Sum()));
+        adminClient.createTable(
+            CreateTableRequest.of(TABLE_ID)
+                .addFamily("cf1", Type.int64Sum())
+                .addFamily("cf2", Type.int64Min())
+                .addFamily("cf3", Type.int64Max())
+                .addFamily("cf4", Type.int64Hll()));
+
+    // Verify
+    assertThat(result).isEqualTo(Table.fromProto(expectedResponse));
+  }
+
+  @Test
+  public void testCreateTableWithDeletionProtectionSet() {
+    // Setup
+    Mockito.when(mockStub.createTableCallable()).thenReturn(mockCreateTableCallable);
+
+    com.google.bigtable.admin.v2.CreateTableRequest expectedRequest =
+        com.google.bigtable.admin.v2.CreateTableRequest.newBuilder()
+            .setParent(INSTANCE_NAME)
+            .setTableId(TABLE_ID)
+            .setTable(
+                com.google.bigtable.admin.v2.Table.newBuilder()
+                    .setDeletionProtection(true)
+                    .putColumnFamilies(
+                        "cf1",
+                        ColumnFamily.newBuilder()
+                            .setGcRule(GcRule.getDefaultInstance())
+                            .setValueType(TypeProtos.intSumType())
+                            .build()))
+            .build();
+
+    com.google.bigtable.admin.v2.Table expectedResponse =
+        com.google.bigtable.admin.v2.Table.newBuilder().setName(TABLE_NAME).build();
+
+    Mockito.when(mockCreateTableCallable.futureCall(expectedRequest))
+        .thenReturn(ApiFutures.immediateFuture(expectedResponse));
+
+    // Execute
+    Table result =
+        adminClient.createTable(
+            CreateTableRequest.of(TABLE_ID)
+                .addFamily("cf1", Type.int64Sum())
+                .setDeletionProtection(true));
 
     // Verify
     assertThat(result).isEqualTo(Table.fromProto(expectedResponse));
@@ -305,6 +368,8 @@ public class BigtableTableAdminClientTests {
     assertThat(actualResult.getId()).isEqualTo(TABLE_ID);
     assertThat(actualResult.getChangeStreamRetention())
         .isEqualTo(org.threeten.bp.Duration.ofHours(24));
+    assertThat(actualResult.getChangeStreamRetention().toMillis())
+        .isEqualTo(actualResult.getChangeStreamRetention().toMillis());
   }
 
   @Test
@@ -436,7 +501,7 @@ public class BigtableTableAdminClientTests {
     Map<String, List<com.google.cloud.bigtable.admin.v2.models.EncryptionInfo>> actualResult =
         adminClient.getEncryptionInfo(TABLE_ID);
 
-    // Verify that the encryption info is transfered from the proto to the model.
+    // Verify that the encryption info is transferred from the proto to the model.
     assertThat(actualResult)
         .containsExactly(
             "cluster1", ImmutableList.of(EncryptionInfo.fromProto(expectedEncryptionInfo)));
@@ -544,6 +609,30 @@ public class BigtableTableAdminClientTests {
   }
 
   @Test
+  public void testAwaitConsistencyForDataBoost() {
+    // Setup
+    Mockito.when(mockStub.awaitConsistencyCallable()).thenReturn(mockAwaitConsistencyCallable);
+
+    ConsistencyRequest consistencyRequest = ConsistencyRequest.forDataBoost(TABLE_ID);
+
+    final AtomicBoolean wasCalled = new AtomicBoolean(false);
+
+    Mockito.when(mockAwaitConsistencyCallable.futureCall(consistencyRequest))
+        .thenAnswer(
+            (Answer<ApiFuture<Void>>)
+                invocationOnMock -> {
+                  wasCalled.set(true);
+                  return ApiFutures.immediateFuture(null);
+                });
+
+    // Execute
+    adminClient.awaitConsistency(consistencyRequest);
+
+    // Verify
+    assertThat(wasCalled.get()).isTrue();
+  }
+
+  @Test
   public void testExistsTrue() {
     // Setup
     Mockito.when(mockStub.getTableCallable()).thenReturn(mockGetTableCallable);
@@ -592,7 +681,9 @@ public class BigtableTableAdminClientTests {
     Timestamp expireTime = Timestamp.newBuilder().setSeconds(789).build();
     long sizeBytes = 123456789;
     CreateBackupRequest req =
-        CreateBackupRequest.of(CLUSTER_ID, BACKUP_ID).setSourceTableId(TABLE_ID);
+        CreateBackupRequest.of(CLUSTER_ID, BACKUP_ID)
+            .setSourceTableId(TABLE_ID)
+            .setExpireTime(Instant.ofEpochMilli(Timestamps.toMillis(expireTime)));
     mockOperationResult(
         mockCreateBackupOperationCallable,
         req.toProto(PROJECT_ID, INSTANCE_ID),
@@ -626,6 +717,61 @@ public class BigtableTableAdminClientTests {
   }
 
   @Test
+  public void testCreateHotBackup() {
+    // Setup
+    Mockito.when(mockStub.createBackupOperationCallable())
+        .thenReturn(mockCreateBackupOperationCallable);
+
+    String backupName = NameUtil.formatBackupName(PROJECT_ID, INSTANCE_ID, CLUSTER_ID, BACKUP_ID);
+    Timestamp startTime = Timestamp.newBuilder().setSeconds(123).build();
+    Timestamp endTime = Timestamp.newBuilder().setSeconds(456).build();
+    Timestamp expireTime = Timestamp.newBuilder().setSeconds(789).build();
+    Timestamp hotToStandardTime = Timestamp.newBuilder().setSeconds(500).build();
+    long sizeBytes = 123456789;
+    CreateBackupRequest req =
+        CreateBackupRequest.of(CLUSTER_ID, BACKUP_ID)
+            .setSourceTableId(TABLE_ID)
+            .setExpireTime(Instant.ofEpochMilli(Timestamps.toMillis(expireTime)))
+            .setBackupType(Backup.BackupType.HOT)
+            .setHotToStandardTime(Instant.ofEpochMilli(Timestamps.toMillis(hotToStandardTime)));
+    mockOperationResult(
+        mockCreateBackupOperationCallable,
+        req.toProto(PROJECT_ID, INSTANCE_ID),
+        com.google.bigtable.admin.v2.Backup.newBuilder()
+            .setName(backupName)
+            .setSourceTable(TABLE_NAME)
+            .setStartTime(startTime)
+            .setEndTime(endTime)
+            .setExpireTime(expireTime)
+            .setSizeBytes(sizeBytes)
+            .setBackupType(com.google.bigtable.admin.v2.Backup.BackupType.HOT)
+            .setHotToStandardTime(hotToStandardTime)
+            .build(),
+        CreateBackupMetadata.newBuilder()
+            .setName(backupName)
+            .setStartTime(startTime)
+            .setEndTime(endTime)
+            .setSourceTable(TABLE_NAME)
+            .build());
+    // Execute
+    Backup actualResult = adminClient.createBackup(req);
+
+    // Verify
+    assertThat(actualResult.getId()).isEqualTo(BACKUP_ID);
+    assertThat(actualResult.getSourceTableId()).isEqualTo(TABLE_ID);
+    assertThat(actualResult.getStartTime())
+        .isEqualTo(Instant.ofEpochMilli(Timestamps.toMillis(startTime)));
+    assertThat(actualResult.getEndTime())
+        .isEqualTo(Instant.ofEpochMilli(Timestamps.toMillis(endTime)));
+    assertThat(actualResult.getExpireTime())
+        .isEqualTo(Instant.ofEpochMilli(Timestamps.toMillis(expireTime)));
+    assertThat(actualResult.getBackupType()).isEqualTo(Backup.BackupType.HOT);
+    assertThat(actualResult.getHotToStandardTime())
+        .isEqualTo(Instant.ofEpochMilli(Timestamps.toMillis(hotToStandardTime)));
+    assertThat(actualResult.getSizeBytes()).isEqualTo(sizeBytes);
+  }
+
+  @Test
   public void testGetBackup() {
     // Setup
     Mockito.when(mockStub.getBackupCallable()).thenReturn(mockGetBackupCallable);
@@ -651,6 +797,7 @@ public class BigtableTableAdminClientTests {
                     .setEndTime(endTime)
                     .setSizeBytes(sizeBytes)
                     .setState(state)
+                    .setBackupType(com.google.bigtable.admin.v2.Backup.BackupType.STANDARD)
                     .build()));
 
     // Execute
@@ -667,6 +814,7 @@ public class BigtableTableAdminClientTests {
         .isEqualTo(Instant.ofEpochMilli(Timestamps.toMillis(endTime)));
     assertThat(actualResult.getSizeBytes()).isEqualTo(sizeBytes);
     assertThat(actualResult.getState()).isEqualTo(Backup.State.fromProto(state));
+    assertThat(actualResult.getBackupType()).isEqualTo(Backup.BackupType.STANDARD);
   }
 
   @Test
@@ -675,6 +823,7 @@ public class BigtableTableAdminClientTests {
     Mockito.when(mockStub.updateBackupCallable()).thenReturn(mockUpdateBackupCallable);
 
     Timestamp expireTime = Timestamp.newBuilder().setSeconds(123456789).build();
+    Timestamp hotToStandardTime = Timestamp.newBuilder().setSeconds(123456789).build();
     long sizeBytes = 12345L;
     UpdateBackupRequest req = UpdateBackupRequest.of(CLUSTER_ID, BACKUP_ID);
     Mockito.when(mockUpdateBackupCallable.futureCall(req.toProto(PROJECT_ID, INSTANCE_ID)))
@@ -686,6 +835,7 @@ public class BigtableTableAdminClientTests {
                     .setSourceTable(NameUtil.formatTableName(PROJECT_ID, INSTANCE_ID, TABLE_ID))
                     .setExpireTime(expireTime)
                     .setSizeBytes(sizeBytes)
+                    .setHotToStandardTime(hotToStandardTime)
                     .build()));
 
     // Execute
@@ -696,6 +846,8 @@ public class BigtableTableAdminClientTests {
     assertThat(actualResult.getSourceTableId()).isEqualTo(TABLE_ID);
     assertThat(actualResult.getExpireTime())
         .isEqualTo(Instant.ofEpochMilli(Timestamps.toMillis(expireTime)));
+    assertThat(actualResult.getHotToStandardTime())
+        .isEqualTo(Instant.ofEpochMilli(Timestamps.toMillis(hotToStandardTime)));
     assertThat(actualResult.getSizeBytes()).isEqualTo(sizeBytes);
   }
 
@@ -865,6 +1017,7 @@ public class BigtableTableAdminClientTests {
     String srcTableId = "src-table";
     String srcClusterId = "src-cluster";
     String srcBackupId = "src-backup";
+
     Instant expireTime = Instant.now().plus(org.threeten.bp.Duration.ofDays(15));
     long sizeBytes = 123456789;
 

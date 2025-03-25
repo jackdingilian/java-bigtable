@@ -1,4 +1,4 @@
-// Copyright 2024 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 
 option csharp_namespace = "Google.Cloud.Bigtable.Admin.V2";
-option go_package = "google.golang.org/genproto/googleapis/bigtable/admin/v2;admin";
+option go_package = "cloud.google.com/go/bigtable/admin/apiv2/adminpb;adminpb";
 option java_multiple_files = true;
 option java_outer_classname = "BigtableTableAdminProto";
 option java_package = "com.google.bigtable.admin.v2";
@@ -360,7 +360,7 @@ service BigtableTableAdmin {
   // returned table [long-running operation][google.longrunning.Operation] can
   // be used to track the progress of the operation, and to cancel it.  The
   // [metadata][google.longrunning.Operation.metadata] field type is
-  // [RestoreTableMetadata][google.bigtable.admin.RestoreTableMetadata].  The
+  // [RestoreTableMetadata][google.bigtable.admin.v2.RestoreTableMetadata].  The
   // [response][google.longrunning.Operation.response] type is
   // [Table][google.bigtable.admin.v2.Table], if successful.
   rpc RestoreTable(RestoreTableRequest) returns (google.longrunning.Operation) {
@@ -688,11 +688,15 @@ message UpdateTableRequest {
   // * `change_stream_config`
   // * `change_stream_config.retention_period`
   // * `deletion_protection`
+  // * `row_key_schema`
   //
   // If `column_families` is set in `update_mask`, it will return an
   // UNIMPLEMENTED error.
   google.protobuf.FieldMask update_mask = 2
       [(google.api.field_behavior) = REQUIRED];
+
+  // Optional. If true, ignore safety checks when updating the table.
+  bool ignore_warnings = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Metadata type for the operation returned by
@@ -1219,7 +1223,7 @@ message ListBackupsResponse {
 // [CopyBackup][google.bigtable.admin.v2.BigtableTableAdmin.CopyBackup].
 message CopyBackupRequest {
   // Required. The name of the destination cluster that will contain the backup
-  // copy. The cluster must already exists. Values are of the form:
+  // copy. The cluster must already exist. Values are of the form:
   // `projects/{project}/instances/{instance}/clusters/{cluster}`.
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
