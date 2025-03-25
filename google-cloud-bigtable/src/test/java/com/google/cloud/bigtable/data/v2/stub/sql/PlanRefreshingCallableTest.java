@@ -64,8 +64,12 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -244,7 +248,7 @@ public class PlanRefreshingCallableTest {
   }
 
   @Test
-  public void planRefreshDelayIsFactoredIntoExecuteTimeout() throws InterruptedException {
+  public void planRefreshDelayIsFactoredIntoExecuteTimeout() throws InterruptedException, ExecutionException, TimeoutException {
     MockServerStreamingCallable<ExecuteQueryRequest, ExecuteQueryResponse> innerCallable =
         new MockServerStreamingCallable<>();
     RequestContext requestContext = RequestContext.create("project", "instance", "profile");
@@ -259,7 +263,7 @@ public class PlanRefreshingCallableTest {
         ExecuteQueryCallContext.create(preparedStatement.bind().build(), metadataFuture);
 
     Duration originalAttemptTimeout = Duration.ofMillis(100);
-    scheduler.schedule(
+    ScheduledFuture<?> schedulePrepareUpdate = scheduler.schedule(
         () -> {
           prepareFuture.set(
               PrepareResponse.fromProto(
@@ -276,12 +280,13 @@ public class PlanRefreshingCallableTest {
     Deadline paddedDeadlineAtStartOfCall =
         Deadline.after(originalAttemptTimeout.toMillis() + 5, TimeUnit.MILLISECONDS);
     callable.call(callContext, outerObserver, context);
-    scheduler.shutdown();
-    scheduler.awaitTermination(30, TimeUnit.SECONDS);
+    schedulePrepareUpdate.get(1, TimeUnit.MINUTES);
+
     GrpcCallContext grpcCallContext =
         (GrpcCallContext) innerCallable.popLastCall().getApiCallContext();
     Deadline executeDeadline = grpcCallContext.getCallOptions().getDeadline();
     assertThat(executeDeadline.isBefore(paddedDeadlineAtStartOfCall)).isTrue();
+    scheduler.shutdown();
   }
 
   @Test
