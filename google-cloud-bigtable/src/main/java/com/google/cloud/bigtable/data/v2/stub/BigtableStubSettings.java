@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Google LLC
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.google.cloud.bigtable.data.v2.stub;
 
 import com.google.api.core.ApiFunction;
 import com.google.api.core.InternalApi;
+import com.google.api.core.ObsoleteApi;
 import com.google.api.gax.core.GaxProperties;
 import com.google.api.gax.core.GoogleCredentialsProvider;
 import com.google.api.gax.core.InstantiatingExecutorProvider;
@@ -34,6 +35,8 @@ import com.google.api.gax.rpc.TransportChannelProvider;
 import com.google.api.gax.rpc.UnaryCallSettings;
 import com.google.bigtable.v2.CheckAndMutateRowRequest;
 import com.google.bigtable.v2.CheckAndMutateRowResponse;
+import com.google.bigtable.v2.ExecuteQueryRequest;
+import com.google.bigtable.v2.ExecuteQueryResponse;
 import com.google.bigtable.v2.GenerateInitialChangeStreamPartitionsRequest;
 import com.google.bigtable.v2.GenerateInitialChangeStreamPartitionsResponse;
 import com.google.bigtable.v2.MutateRowRequest;
@@ -42,6 +45,8 @@ import com.google.bigtable.v2.MutateRowsRequest;
 import com.google.bigtable.v2.MutateRowsResponse;
 import com.google.bigtable.v2.PingAndWarmRequest;
 import com.google.bigtable.v2.PingAndWarmResponse;
+import com.google.bigtable.v2.PrepareQueryRequest;
+import com.google.bigtable.v2.PrepareQueryResponse;
 import com.google.bigtable.v2.ReadChangeStreamRequest;
 import com.google.bigtable.v2.ReadChangeStreamResponse;
 import com.google.bigtable.v2.ReadModifyWriteRowRequest;
@@ -55,9 +60,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import javax.annotation.Generated;
-import org.threeten.bp.Duration;
 
 // AUTO-GENERATED DOCUMENTATION AND CLASS.
 /** For internal use only. */
@@ -92,6 +97,9 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
       generateInitialChangeStreamPartitionsSettings;
   private final ServerStreamingCallSettings<ReadChangeStreamRequest, ReadChangeStreamResponse>
       readChangeStreamSettings;
+  private final UnaryCallSettings<PrepareQueryRequest, PrepareQueryResponse> prepareQuerySettings;
+  private final ServerStreamingCallSettings<ExecuteQueryRequest, ExecuteQueryResponse>
+      executeQuerySettings;
 
   /** Returns the object with the settings used for calls to readRows. */
   public ServerStreamingCallSettings<ReadRowsRequest, ReadRowsResponse> readRowsSettings() {
@@ -147,6 +155,17 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
     return readChangeStreamSettings;
   }
 
+  /** Returns the object with the settings used for calls to prepareQuery. */
+  public UnaryCallSettings<PrepareQueryRequest, PrepareQueryResponse> prepareQuerySettings() {
+    return prepareQuerySettings;
+  }
+
+  /** Returns the object with the settings used for calls to executeQuery. */
+  public ServerStreamingCallSettings<ExecuteQueryRequest, ExecuteQueryResponse>
+      executeQuerySettings() {
+    return executeQuerySettings;
+  }
+
   public BigtableStub createStub() throws IOException {
     if (getTransportChannelProvider()
         .getTransportName()
@@ -170,6 +189,7 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
   }
 
   /** Returns the default service endpoint. */
+  @ObsoleteApi("Use getEndpoint() instead")
   public static String getDefaultEndpoint() {
     return "bigtable.googleapis.com:443";
   }
@@ -236,6 +256,8 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
     generateInitialChangeStreamPartitionsSettings =
         settingsBuilder.generateInitialChangeStreamPartitionsSettings().build();
     readChangeStreamSettings = settingsBuilder.readChangeStreamSettings().build();
+    prepareQuerySettings = settingsBuilder.prepareQuerySettings().build();
+    executeQuerySettings = settingsBuilder.executeQuerySettings().build();
   }
 
   /** Builder for BigtableStubSettings. */
@@ -261,6 +283,10 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
     private final ServerStreamingCallSettings.Builder<
             ReadChangeStreamRequest, ReadChangeStreamResponse>
         readChangeStreamSettings;
+    private final UnaryCallSettings.Builder<PrepareQueryRequest, PrepareQueryResponse>
+        prepareQuerySettings;
+    private final ServerStreamingCallSettings.Builder<ExecuteQueryRequest, ExecuteQueryResponse>
+        executeQuerySettings;
     private static final ImmutableMap<String, ImmutableSet<StatusCode.Code>>
         RETRYABLE_CODE_DEFINITIONS;
 
@@ -272,7 +298,7 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
       definitions.put(
           "no_retry_1_codes", ImmutableSet.copyOf(Lists.<StatusCode.Code>newArrayList()));
       definitions.put(
-          "retry_policy_4_codes",
+          "retry_policy_5_codes",
           ImmutableSet.copyOf(
               Lists.<StatusCode.Code>newArrayList(
                   StatusCode.Code.UNAVAILABLE, StatusCode.Code.DEADLINE_EXCEEDED)));
@@ -282,9 +308,14 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
           "no_retry_0_codes", ImmutableSet.copyOf(Lists.<StatusCode.Code>newArrayList()));
       definitions.put("no_retry_codes", ImmutableSet.copyOf(Lists.<StatusCode.Code>newArrayList()));
       definitions.put(
-          "no_retry_5_codes", ImmutableSet.copyOf(Lists.<StatusCode.Code>newArrayList()));
-      definitions.put(
           "no_retry_6_codes", ImmutableSet.copyOf(Lists.<StatusCode.Code>newArrayList()));
+      definitions.put(
+          "no_retry_7_codes", ImmutableSet.copyOf(Lists.<StatusCode.Code>newArrayList()));
+      definitions.put(
+          "retry_policy_4_codes",
+          ImmutableSet.copyOf(
+              Lists.<StatusCode.Code>newArrayList(
+                  StatusCode.Code.UNAVAILABLE, StatusCode.Code.DEADLINE_EXCEEDED)));
       RETRYABLE_CODE_DEFINITIONS = definitions.build();
     }
 
@@ -295,65 +326,76 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
       RetrySettings settings = null;
       settings =
           RetrySettings.newBuilder()
-              .setInitialRpcTimeout(Duration.ofMillis(43200000L))
+              .setInitialRpcTimeoutDuration(Duration.ofMillis(43200000L))
               .setRpcTimeoutMultiplier(1.0)
-              .setMaxRpcTimeout(Duration.ofMillis(43200000L))
-              .setTotalTimeout(Duration.ofMillis(43200000L))
+              .setMaxRpcTimeoutDuration(Duration.ofMillis(43200000L))
+              .setTotalTimeoutDuration(Duration.ofMillis(43200000L))
               .build();
       definitions.put("no_retry_3_params", settings);
       settings =
           RetrySettings.newBuilder()
-              .setInitialRpcTimeout(Duration.ofMillis(60000L))
+              .setInitialRpcTimeoutDuration(Duration.ofMillis(60000L))
               .setRpcTimeoutMultiplier(1.0)
-              .setMaxRpcTimeout(Duration.ofMillis(60000L))
-              .setTotalTimeout(Duration.ofMillis(60000L))
+              .setMaxRpcTimeoutDuration(Duration.ofMillis(60000L))
+              .setTotalTimeoutDuration(Duration.ofMillis(60000L))
               .build();
       definitions.put("no_retry_1_params", settings);
       settings =
           RetrySettings.newBuilder()
-              .setInitialRetryDelay(Duration.ofMillis(10L))
+              .setInitialRetryDelayDuration(Duration.ofMillis(10L))
               .setRetryDelayMultiplier(2.0)
-              .setMaxRetryDelay(Duration.ofMillis(60000L))
-              .setInitialRpcTimeout(Duration.ofMillis(60000L))
+              .setMaxRetryDelayDuration(Duration.ofMillis(60000L))
+              .setInitialRpcTimeoutDuration(Duration.ofMillis(60000L))
               .setRpcTimeoutMultiplier(1.0)
-              .setMaxRpcTimeout(Duration.ofMillis(60000L))
-              .setTotalTimeout(Duration.ofMillis(60000L))
+              .setMaxRpcTimeoutDuration(Duration.ofMillis(60000L))
+              .setTotalTimeoutDuration(Duration.ofMillis(60000L))
               .build();
-      definitions.put("retry_policy_4_params", settings);
+      definitions.put("retry_policy_5_params", settings);
       settings =
           RetrySettings.newBuilder()
-              .setInitialRpcTimeout(Duration.ofMillis(600000L))
+              .setInitialRpcTimeoutDuration(Duration.ofMillis(600000L))
               .setRpcTimeoutMultiplier(1.0)
-              .setMaxRpcTimeout(Duration.ofMillis(600000L))
-              .setTotalTimeout(Duration.ofMillis(600000L))
+              .setMaxRpcTimeoutDuration(Duration.ofMillis(600000L))
+              .setTotalTimeoutDuration(Duration.ofMillis(600000L))
               .build();
       definitions.put("no_retry_2_params", settings);
       settings =
           RetrySettings.newBuilder()
-              .setInitialRpcTimeout(Duration.ofMillis(20000L))
+              .setInitialRpcTimeoutDuration(Duration.ofMillis(20000L))
               .setRpcTimeoutMultiplier(1.0)
-              .setMaxRpcTimeout(Duration.ofMillis(20000L))
-              .setTotalTimeout(Duration.ofMillis(20000L))
+              .setMaxRpcTimeoutDuration(Duration.ofMillis(20000L))
+              .setTotalTimeoutDuration(Duration.ofMillis(20000L))
               .build();
       definitions.put("no_retry_0_params", settings);
       settings = RetrySettings.newBuilder().setRpcTimeoutMultiplier(1.0).build();
       definitions.put("no_retry_params", settings);
       settings =
           RetrySettings.newBuilder()
-              .setInitialRpcTimeout(Duration.ofMillis(60000L))
+              .setInitialRpcTimeoutDuration(Duration.ofMillis(60000L))
               .setRpcTimeoutMultiplier(1.0)
-              .setMaxRpcTimeout(Duration.ofMillis(60000L))
-              .setTotalTimeout(Duration.ofMillis(60000L))
-              .build();
-      definitions.put("no_retry_5_params", settings);
-      settings =
-          RetrySettings.newBuilder()
-              .setInitialRpcTimeout(Duration.ofMillis(43200000L))
-              .setRpcTimeoutMultiplier(1.0)
-              .setMaxRpcTimeout(Duration.ofMillis(43200000L))
-              .setTotalTimeout(Duration.ofMillis(43200000L))
+              .setMaxRpcTimeoutDuration(Duration.ofMillis(60000L))
+              .setTotalTimeoutDuration(Duration.ofMillis(60000L))
               .build();
       definitions.put("no_retry_6_params", settings);
+      settings =
+          RetrySettings.newBuilder()
+              .setInitialRpcTimeoutDuration(Duration.ofMillis(43200000L))
+              .setRpcTimeoutMultiplier(1.0)
+              .setMaxRpcTimeoutDuration(Duration.ofMillis(43200000L))
+              .setTotalTimeoutDuration(Duration.ofMillis(43200000L))
+              .build();
+      definitions.put("no_retry_7_params", settings);
+      settings =
+          RetrySettings.newBuilder()
+              .setInitialRetryDelayDuration(Duration.ofMillis(10L))
+              .setRetryDelayMultiplier(2.0)
+              .setMaxRetryDelayDuration(Duration.ofMillis(60000L))
+              .setInitialRpcTimeoutDuration(Duration.ofMillis(43200000L))
+              .setRpcTimeoutMultiplier(1.0)
+              .setMaxRpcTimeoutDuration(Duration.ofMillis(43200000L))
+              .setTotalTimeoutDuration(Duration.ofMillis(43200000L))
+              .build();
+      definitions.put("retry_policy_4_params", settings);
       RETRY_PARAM_DEFINITIONS = definitions.build();
     }
 
@@ -373,13 +415,16 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
       readModifyWriteRowSettings = UnaryCallSettings.newUnaryCallSettingsBuilder();
       generateInitialChangeStreamPartitionsSettings = ServerStreamingCallSettings.newBuilder();
       readChangeStreamSettings = ServerStreamingCallSettings.newBuilder();
+      prepareQuerySettings = UnaryCallSettings.newUnaryCallSettingsBuilder();
+      executeQuerySettings = ServerStreamingCallSettings.newBuilder();
 
       unaryMethodSettingsBuilders =
           ImmutableList.<UnaryCallSettings.Builder<?, ?>>of(
               mutateRowSettings,
               checkAndMutateRowSettings,
               pingAndWarmSettings,
-              readModifyWriteRowSettings);
+              readModifyWriteRowSettings,
+              prepareQuerySettings);
       initDefaults(this);
     }
 
@@ -396,13 +441,16 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
       generateInitialChangeStreamPartitionsSettings =
           settings.generateInitialChangeStreamPartitionsSettings.toBuilder();
       readChangeStreamSettings = settings.readChangeStreamSettings.toBuilder();
+      prepareQuerySettings = settings.prepareQuerySettings.toBuilder();
+      executeQuerySettings = settings.executeQuerySettings.toBuilder();
 
       unaryMethodSettingsBuilders =
           ImmutableList.<UnaryCallSettings.Builder<?, ?>>of(
               mutateRowSettings,
               checkAndMutateRowSettings,
               pingAndWarmSettings,
-              readModifyWriteRowSettings);
+              readModifyWriteRowSettings,
+              prepareQuerySettings);
     }
 
     private static Builder createDefault() {
@@ -430,8 +478,8 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
 
       builder
           .mutateRowSettings()
-          .setRetryableCodes(RETRYABLE_CODE_DEFINITIONS.get("retry_policy_4_codes"))
-          .setRetrySettings(RETRY_PARAM_DEFINITIONS.get("retry_policy_4_params"));
+          .setRetryableCodes(RETRYABLE_CODE_DEFINITIONS.get("retry_policy_5_codes"))
+          .setRetrySettings(RETRY_PARAM_DEFINITIONS.get("retry_policy_5_params"));
 
       builder
           .mutateRowsSettings()
@@ -455,13 +503,23 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
 
       builder
           .generateInitialChangeStreamPartitionsSettings()
-          .setRetryableCodes(RETRYABLE_CODE_DEFINITIONS.get("no_retry_5_codes"))
-          .setRetrySettings(RETRY_PARAM_DEFINITIONS.get("no_retry_5_params"));
+          .setRetryableCodes(RETRYABLE_CODE_DEFINITIONS.get("no_retry_6_codes"))
+          .setRetrySettings(RETRY_PARAM_DEFINITIONS.get("no_retry_6_params"));
 
       builder
           .readChangeStreamSettings()
-          .setRetryableCodes(RETRYABLE_CODE_DEFINITIONS.get("no_retry_6_codes"))
-          .setRetrySettings(RETRY_PARAM_DEFINITIONS.get("no_retry_6_params"));
+          .setRetryableCodes(RETRYABLE_CODE_DEFINITIONS.get("no_retry_7_codes"))
+          .setRetrySettings(RETRY_PARAM_DEFINITIONS.get("no_retry_7_params"));
+
+      builder
+          .prepareQuerySettings()
+          .setRetryableCodes(RETRYABLE_CODE_DEFINITIONS.get("no_retry_codes"))
+          .setRetrySettings(RETRY_PARAM_DEFINITIONS.get("no_retry_params"));
+
+      builder
+          .executeQuerySettings()
+          .setRetryableCodes(RETRYABLE_CODE_DEFINITIONS.get("retry_policy_4_codes"))
+          .setRetrySettings(RETRY_PARAM_DEFINITIONS.get("retry_policy_4_params"));
 
       return builder;
     }
@@ -536,6 +594,18 @@ public class BigtableStubSettings extends StubSettings<BigtableStubSettings> {
     public ServerStreamingCallSettings.Builder<ReadChangeStreamRequest, ReadChangeStreamResponse>
         readChangeStreamSettings() {
       return readChangeStreamSettings;
+    }
+
+    /** Returns the builder for the settings used for calls to prepareQuery. */
+    public UnaryCallSettings.Builder<PrepareQueryRequest, PrepareQueryResponse>
+        prepareQuerySettings() {
+      return prepareQuerySettings;
+    }
+
+    /** Returns the builder for the settings used for calls to executeQuery. */
+    public ServerStreamingCallSettings.Builder<ExecuteQueryRequest, ExecuteQueryResponse>
+        executeQuerySettings() {
+      return executeQuerySettings;
     }
 
     @Override

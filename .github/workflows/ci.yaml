@@ -20,22 +20,806 @@ on:
   pull_request:
 name: ci
 jobs:
-  units:
+  units1:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        java: [11, 17, 21]
+        java: [11, 17, 21, 24]
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: ${{matrix.java}}
-    - run: java -version
-    - run: .kokoro/build.sh
-      env:
-        JOB_TYPE: test
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units2:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units3:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units4:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units5:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units6:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units7:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units8:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units9:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units10:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units11:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units12:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units13:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units14:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units15:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units16:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units17:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units18:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units19:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units20:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units21:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units22:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units23:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units24:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units25:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units26:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units27:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units28:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units29:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units30:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units31:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units32:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units33:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units34:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units35:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units36:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units37:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units38:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units39:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units40:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units41:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units42:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units43:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units44:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units45:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units46:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units47:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units48:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units49:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
+  units50:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [11, 17, 21, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{matrix.java}}
+      - run: java -version
+      - run: .kokoro/build.sh
+        env:
+          JOB_TYPE: test
   units-java8:
     # Building using Java 17 and run the tests with Java 8 runtime
     name: "units (8)"
@@ -104,7 +888,7 @@ jobs:
     - uses: actions/setup-java@v4
       with:
         distribution: temurin
-        java-version: 11
+        java-version: 17
     - run: java -version
     - run: .kokoro/build.sh
       env:

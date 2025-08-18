@@ -47,7 +47,9 @@ public final class RowMutation implements MutationApi<RowMutation>, Serializable
     this.mutation = mutation;
   }
 
-  /** @deprecated Please use {@link RowMutation#create(TargetId, String)} instead. */
+  /**
+   * @deprecated Please use {@link RowMutation#create(TargetId, String)} instead.
+   */
   @Deprecated
   public static RowMutation create(String tableId, String key) {
     return create(tableId, ByteString.copyFromUtf8(key));
@@ -64,7 +66,9 @@ public final class RowMutation implements MutationApi<RowMutation>, Serializable
     return create(targetId, ByteString.copyFromUtf8(key));
   }
 
-  /** @deprecated Please use {@link RowMutation#create(TargetId, ByteString)} instead. */
+  /**
+   * @deprecated Please use {@link RowMutation#create(TargetId, ByteString)} instead.
+   */
   @Deprecated
   public static RowMutation create(String tableId, ByteString key) {
     return new RowMutation(TableId.of(tableId), key, Mutation.create());
@@ -81,7 +85,9 @@ public final class RowMutation implements MutationApi<RowMutation>, Serializable
     return new RowMutation(targetId, key, Mutation.create());
   }
 
-  /** @deprecated Please use {@link RowMutation#create(TargetId, String, Mutation)} instead. */
+  /**
+   * @deprecated Please use {@link RowMutation#create(TargetId, String, Mutation)} instead.
+   */
   @Deprecated
   public static RowMutation create(String tableId, String key, Mutation mutation) {
     return create(tableId, ByteString.copyFromUtf8(key), mutation);
@@ -107,7 +113,9 @@ public final class RowMutation implements MutationApi<RowMutation>, Serializable
     return create(targetId, ByteString.copyFromUtf8(key), mutation);
   }
 
-  /** @deprecated Please use {@link RowMutation#create(TargetId, ByteString, Mutation)} instead. */
+  /**
+   * @deprecated Please use {@link RowMutation#create(TargetId, ByteString, Mutation)} instead.
+   */
   @Deprecated
   public static RowMutation create(String tableId, ByteString key, Mutation mutation) {
     return new RowMutation(TableId.of(tableId), key, mutation);
@@ -234,6 +242,16 @@ public final class RowMutation implements MutationApi<RowMutation>, Serializable
       @Nonnull Value timestamp,
       @Nonnull Value input) {
     mutation.addToCell(familyName, qualifier, timestamp, input);
+    return this;
+  }
+
+  @Override
+  public RowMutation mergeToCell(
+      @Nonnull String familyName,
+      @Nonnull Value qualifier,
+      @Nonnull Value timestamp,
+      @Nonnull Value input) {
+    mutation.mergeToCell(familyName, qualifier, timestamp, input);
     return this;
   }
 

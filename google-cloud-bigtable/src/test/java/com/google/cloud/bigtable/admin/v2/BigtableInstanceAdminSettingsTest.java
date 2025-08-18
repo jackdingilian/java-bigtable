@@ -89,9 +89,7 @@ public class BigtableInstanceAdminSettingsTest {
         .containsExactly(Code.INVALID_ARGUMENT);
 
     assertThat(
-            builder
-                .build()
-                .toBuilder()
+            builder.build().toBuilder()
                 .build()
                 .getStubSettings()
                 .createInstanceSettings()
@@ -123,6 +121,16 @@ public class BigtableInstanceAdminSettingsTest {
     "getIamPolicySettings",
     "setIamPolicySettings",
     "testIamPermissionsSettings",
+    "createMaterializedViewSettings",
+    "getMaterializedViewSettings",
+    "listMaterializedViewsSettings",
+    "updateMaterializedViewSettings",
+    "deleteMaterializedViewSettings",
+    "createLogicalViewSettings",
+    "getLogicalViewSettings",
+    "listLogicalViewsSettings",
+    "updateLogicalViewSettings",
+    "deleteLogicalViewSettings",
   };
 
   @Test
@@ -144,7 +152,7 @@ public class BigtableInstanceAdminSettingsTest {
     BigtableInstanceAdminSettings settings = builder.build();
     checkToString(settings);
     assertThat(settings.toString()).contains("endpoint=example.com:1234");
-    assertThat(settings.toString()).contains("totalTimeout=PT13H32M");
+    assertThat(settings.toString()).contains("totalTimeoutDuration=PT13H32M");
   }
 
   void checkToString(BigtableInstanceAdminSettings settings) {
@@ -155,6 +163,6 @@ public class BigtableInstanceAdminSettingsTest {
     for (String subSettings : SETTINGS_LIST) {
       assertThat(toString).contains(subSettings + "=");
     }
-    assertThat(toString.contains(settings.getStubSettings().toString()));
+    assertThat(toString).contains(settings.getStubSettings().toString());
   }
 }
