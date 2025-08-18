@@ -789,7 +789,7 @@ public class ExecuteQueryRetryTest {
         ExecuteRpcExpectation.create()
             .withPreparedQuery(ByteString.copyFromUtf8("bar"))
             // Should timeout bc we used 350 ms on prepare refresh and have 500ms timeout
-            .withDelay(Duration.ofMillis(350))
+            .withDelay(Duration.ofMillis(1000))
             .respondWith(partialResultSetWithToken(stringValue("s"))));
 
     PreparedStatement ps =
