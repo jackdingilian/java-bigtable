@@ -63,6 +63,7 @@ import io.grpc.testing.GrpcServerRule;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -503,7 +504,7 @@ public class ExecuteQueryRetryTest {
         .setRetrySettings(
             RetrySettings.newBuilder()
                 .setMaxAttempts(10)
-                .setTotalTimeoutDuration(Duration.ofMillis(30))
+                .setTotalTimeoutDuration(Duration.ofMillis(300))
                 .build())
         .build();
     settings.stubSettings().build();

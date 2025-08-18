@@ -2739,7 +2739,7 @@ public class BigtableDataClient implements AutoCloseable {
    */
   public ResultSet executeQuery(BoundStatement boundStatement) {
     boundStatement.assertUsingSameStub(stub);
-    SqlServerStream stream = stub.createExecuteQueryCallable().call(boundStatement);
+    SqlServerStream stream = stub.executeQueryCallable().call(boundStatement);
     return ResultSetImpl.create(stream);
   }
 
